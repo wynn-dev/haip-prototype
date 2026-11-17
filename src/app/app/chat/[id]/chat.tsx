@@ -169,7 +169,7 @@ export function Chat({ matchId, meId, other, kind, initial }: { matchId: string;
                 })
               }
             />
-            <Row icon={Flag} iconBg="bg-red" label="Report or block" destructive onClick={() => { setMenuOpen(false); setSafety(true); }} />
+            <Row icon={Flag} iconBg="bg-danger" label="Report or block" destructive onClick={() => { setMenuOpen(false); setSafety(true); }} />
           </Section>
         </DrawerContent>
       </Drawer>

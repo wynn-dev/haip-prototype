@@ -45,7 +45,7 @@ export function SafetyDrawer({
         <div className="flex flex-col gap-5 overflow-y-auto pb-8">
           {mode === "menu" ? (
             <Section>
-              <Row icon={Flag} iconBg="bg-red" label="Report" chevron onClick={() => setMode("report")} />
+              <Row icon={Flag} iconBg="bg-danger" label="Report" chevron onClick={() => setMode("report")} />
               <Row
                 icon={Ban}
                 iconBg="bg-label-2"
@@ -79,7 +79,7 @@ export function SafetyDrawer({
                 <Button
                   variant="filled"
                   size="xl"
-                  className="w-full bg-red text-white"
+                  className="w-full bg-danger text-white"
                   disabled={!reason || pending}
                   onClick={() =>
                     start(async () => {

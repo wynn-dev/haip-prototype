@@ -20,7 +20,7 @@ const buttonVariants = cva(
         filled: "bg-label text-on-label hover:opacity-90 active:opacity-80",
         tinted: "bg-fill text-label hover:bg-fill-2 active:opacity-80",
         plain: "text-tint hover:opacity-80 active:opacity-60",
-        danger: "bg-red/12 text-red hover:bg-red/18 active:opacity-80",
+        danger: "bg-danger/12 text-danger hover:bg-danger/18 active:opacity-80",
       },
       size: {
         default:

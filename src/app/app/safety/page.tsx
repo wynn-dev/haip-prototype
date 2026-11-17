@@ -56,7 +56,7 @@ export default async function SafetyPage() {
               key={r.id}
               label={username ?? "Deleted account"}
               detail={`${labelOf(REPORT_REASONS, r.reason)} · ${new Date(r.createdAt).toLocaleDateString("en-GB")}`}
-              value={<span className={r.status === "upheld" ? "text-green" : undefined}>{STATUS[r.status]}</span>}
+              value={<span className={r.status === "upheld" ? "text-positive" : undefined}>{STATUS[r.status]}</span>}
             />
           ))
         )}

@@ -65,8 +65,8 @@ function SwipeCard({
       >
         <MoreHorizontal className="size-5" />
       </button>
-      <motion.div style={{ opacity: likeOpacity }} className="pointer-events-none absolute inset-0 grid place-items-center rounded-[28px] bg-green/15">
-        <span className="grid size-24 place-items-center rounded-full bg-green text-white shadow-lg"><Heart className="size-11 fill-white" /></span>
+      <motion.div style={{ opacity: likeOpacity }} className="pointer-events-none absolute inset-0 grid place-items-center rounded-[28px] bg-positive/15">
+        <span className="grid size-24 place-items-center rounded-full bg-positive text-white shadow-lg"><Heart className="size-11 fill-white" /></span>
       </motion.div>
       <motion.div style={{ opacity: passOpacity }} className="pointer-events-none absolute inset-0 grid place-items-center rounded-[28px] bg-black/10">
         <span className="grid size-24 place-items-center rounded-full bg-surface text-label shadow-lg"><X className="size-11" strokeWidth={2.5} /></span>
@@ -77,15 +77,12 @@ function SwipeCard({
 
 export function Deck({
   initial,
-  initialLikesLeft,
   me,
 }: {
   initial: CardData[];
-  initialLikesLeft: number;
   me: { username: string; photoUrl: string | null };
 }) {
   const [cards, setCards] = useState(initial);
-  const [likes, setLikes] = useState(initialLikesLeft);
   const [forced, setForced] = useState<"like" | "pass" | null>(null);
   const [match, setMatch] = useState<{ id: string; card: CardData } | null>(null);
   const [safety, setSafety] = useState(false);
@@ -99,26 +96,20 @@ export function Deck({
     setCards((c) => c.slice(1));
     start(async () => {
       const r = await swipe(card.userId, d);
-      setLikes(r.likesLeft);
-      if (!r.ok) {
-        toast.error(r.error);
-        if (d === "like" && r.likesLeft === 0) setCards((c) => [card, ...c]);
-        return;
-      }
+      if (!r.ok) return void toast.error(r.error);
       if (r.matchId) setMatch({ id: r.matchId, card });
     });
   };
 
   const press = (d: "like" | "pass") => {
     if (!top || forced) return;
-    if (d === "like" && likes <= 0) return void toast("No likes left today", { description: "They refill 24 hours after you use them." });
     setForced(d);
   };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <p className="px-4 pb-3 text-[15px] text-label-2">
-        {likes > 0 ? `${likes} likes left today` : "No likes left today"}
+        {cards.length > 0 ? `${cards.length} ${cards.length === 1 ? "person matches" : "people match"} your filters` : "Nobody new right now"}
       </p>
 
       <div className="relative mx-3 min-h-0 flex-1">
@@ -144,6 +135,7 @@ export function Deck({
           disabled={!top}
           className="grid size-[60px] place-items-center rounded-full bg-surface shadow-[var(--shadow-float)] transition-transform active:scale-90 disabled:opacity-40"
           aria-label="Pass"
+          title="Pass"
         >
           <X className="size-7 text-label-2" strokeWidth={2.5} />
         </button>
@@ -152,6 +144,7 @@ export function Deck({
           disabled={!top}
           className="grid size-[60px] place-items-center rounded-full bg-label shadow-[var(--shadow-float)] transition-transform active:scale-90 disabled:opacity-40"
           aria-label="Like"
+          title="Like"
         >
           <Heart className="size-7 fill-on-label text-on-label" strokeWidth={0} />
         </button>

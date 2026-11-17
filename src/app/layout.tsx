@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Toaster } from "@/components/ui/sonner";
+import { Device } from "@/components/device";
 import { APP_NAME, APP_TAGLINE } from "@/lib/brand";
 import "./globals.css";
 
@@ -26,15 +26,8 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable}`}>
-      <body className="min-h-dvh font-sans sm:grid sm:place-items-center sm:bg-[#e5e5ea] sm:py-8 dark:sm:bg-[#111]">
-        {/* phone-width column; on desktop it sits in a device-like frame */}
-        <div
-          id="app"
-          className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col bg-bg sm:h-[min(932px,calc(100dvh-4rem))] sm:min-h-0 sm:overflow-y-auto sm:rounded-[44px] sm:shadow-[0_0_0_10px_#1c1c1e,0_30px_80px_rgb(0_0_0/0.35)] sm:scrollbar-none"
-        >
-          {children}
-        </div>
-        <Toaster position="top-center" />
+      <body className="min-h-dvh font-sans sm:flex sm:h-dvh sm:items-center sm:justify-center sm:overflow-hidden sm:bg-[radial-gradient(120%_80%_at_50%_0%,#f4f4f7_0%,#dcdce2_100%)] dark:sm:bg-[radial-gradient(120%_80%_at_50%_0%,#1c1c1f_0%,#050506_100%)]">
+        <Device>{children}</Device>
       </body>
     </html>
   );

@@ -144,5 +144,3 @@ export function institutionForEmail(email: string): string | null {
 export const labelOf = <T extends { value: string; label: string }>(list: readonly T[], v: string) =>
   list.find((x) => x.value === v)?.label ?? v;
 
-/** Likes per rolling 24h. Friction so attention spreads across more people. */
-export const DAILY_LIKES = 20;

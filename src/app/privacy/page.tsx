@@ -1,5 +1,4 @@
 import { LargeTitle, NavBar, Row, Section } from "@/components/ios";
-import { DAILY_LIKES } from "@/lib/options";
 
 export const metadata = { title: "Your data" };
 
@@ -39,8 +38,7 @@ export default function PrivacyPage() {
         <p className="px-4 py-3 text-[15px] leading-relaxed">
           You only see people where <b>both</b> of you pass each other&apos;s filters: gender and age preferences, dealbreakers, allergies versus
           pets and smoke, budget versus rent (up to 10% over), and city. Everyone left is ranked by a compatibility score based on tidiness,
-          sleep, guests, languages, timing and budget, which you can see on every card. You get {DAILY_LIKES} likes per 24 hours, so attention
-          spreads out and more people get matches.
+          sleep, guests, languages, timing and budget, which you can see on every card.
         </p>
       </Section>
 

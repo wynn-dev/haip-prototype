@@ -15,8 +15,11 @@ function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
 }
 
-function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
-  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+// Portal into the phone screen (#screen) so overlays stay inside the device frame on desktop.
+const screenEl = () => (typeof document === "undefined" ? undefined : (document.getElementById("screen") ?? undefined))
+
+function DialogPortal({ container, ...props }: DialogPrimitive.Portal.Props) {
+  return <DialogPrimitive.Portal data-slot="dialog-portal" container={container ?? screenEl()} {...props} />
 }
 
 function DialogClose({ ...props }: DialogPrimitive.Close.Props) {

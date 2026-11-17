@@ -9,7 +9,7 @@ Mobile web prototype for finding compatible housemates in the Netherlands. Rente
 - **Accounts:** e-mail + password, phone 2FA on every login, 18+ gate (date of birth + ID-check step), optional student verification via university e-mail. SMS and e-mail delivery are simulated: codes show up as an in-app "DEMO" notification until `SMS_PROVIDER_KEY` is wired up.
 - **Profiles:** role (has a room / needs a room), photo, gender, languages, lifestyle (tidiness, sleep, guests, smoking, pets, allergies), housemate preferences and dealbreakers, plus either a listing (photos, rent, contract, features, address) or a search (budget, cities, timing).
 - **Matching** (`src/lib/matching.ts`): symmetric hard filters (gender/age preferences, dealbreakers, allergies vs pets/smoke, budget vs rent with 10% tolerance, city), then a weighted 0–100 compatibility score with human-readable reasons. The server re-checks the filters on every swipe.
-- **Swiping:** persisted swipes (never see someone twice), 20 likes per rolling 24h, instant match on a mutual like.
+- **Swiping:** persisted swipes (never see someone twice); a mutual like is an instant match.
 - **Chat:** polling-based, only between matches. The exact street address is revealed only after matching.
 - **Trust & safety:** report + block from any card or chat, a safety centre, a moderation queue with trusted-reporter prioritisation (`PRIORITISE_TRUSTED_REPORTERS`), removal with a stated reason, appeals, and contact channels for users and authorities.
 - **Privacy:** a plain-language data page, JSON export of everything, and instant account deletion.

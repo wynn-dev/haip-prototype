@@ -1,8 +1,7 @@
 import "server-only";
-import { and, eq, gt, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import type { Listing, Profile, User } from "@/db/schema";
-import { DAILY_LIKES } from "@/lib/options";
 import { ageFromDob, interactionKind, passesHardFilters, scoreMatch, type Person } from "@/lib/matching";
 
 type Row = { user: User; profile: Profile; listing: Listing | null };
@@ -130,17 +129,6 @@ export async function blockedIds(userId: string) {
     .from(schema.blocks)
     .where(or(eq(schema.blocks.blockerId, userId), eq(schema.blocks.blockedId, userId)));
   return new Set(rows.map((b) => (b.blockerId === userId ? b.blockedId : b.blockerId)));
-}
-
-export async function likesLeft(userId: string) {
-  const since = new Date(Date.now() - 24 * 3600 * 1000);
-  const [{ n }] = await db
-    .select({ n: sql<number>`count(*)::int` })
-    .from(schema.swipes)
-    .where(
-      and(eq(schema.swipes.swiperId, userId), eq(schema.swipes.direction, "like"), gt(schema.swipes.createdAt, since)),
-    );
-  return Math.max(0, DAILY_LIKES - n);
 }
 
 /**

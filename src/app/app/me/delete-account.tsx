@@ -11,7 +11,7 @@ export function DeleteAccount() {
   const [pending, start] = useTransition();
   return (
     <Dialog>
-      <DialogTrigger render={<button className="flex min-h-11 w-full items-center px-4 text-red active:bg-fill" />}>
+      <DialogTrigger render={<button className="flex min-h-11 w-full items-center px-4 text-danger active:bg-fill" />}>
         Delete account
       </DialogTrigger>
       <DialogContent className="max-w-[300px] gap-3 rounded-[14px] border-0 bg-surface/95 p-5 text-center backdrop-blur-xl" showCloseButton={false}>
@@ -28,7 +28,7 @@ export function DeleteAccount() {
           placeholder="Type DELETE"
           className="h-9 rounded-[8px] border-[0.5px] border-separator bg-bg px-2.5 text-[15px] outline-none"
         />
-        {err && <p className="text-[13px] text-red">{err}</p>}
+        {err && <p className="text-[13px] text-danger">{err}</p>}
         <Button variant="danger" size="xl" className="h-11 text-[17px]" disabled={pending || v.trim().toUpperCase() !== "DELETE"} onClick={() => start(async () => { const r = await deleteAccount(v); if (r?.error) setErr(r.error); })}>
           Delete everything
         </Button>
