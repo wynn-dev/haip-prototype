@@ -1,26 +1,119 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Palette: Dutch-ish. Warm paper, canal ink, King's-day orange,
+  tram-stop blue, polder green, butter yellow.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #f5efe4;
+  --paper-2: #ece3d3;
+  --ink: #1b1a2e;
+  --oranje: #ff5b1f;
+  --canal: #2f4bd8;
+  --polder: #1f8a5b;
+  --butter: #ffd36e;
+  --brick: #c2412d;
+  --lilac: #c9b8ff;
+
+  --radius: 1.1rem;
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: #fffaf2;
+  --card-foreground: var(--ink);
+  --popover: #fffaf2;
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--paper);
+  --secondary: var(--paper-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--paper-2);
+  --muted-foreground: #6b6577;
+  --accent: var(--butter);
+  --accent-foreground: var(--ink);
+  --destructive: var(--brick);
+  --border: #d9cdb8;
+  --input: #d9cdb8;
+  --ring: var(--oranje);
 }
 
 @theme inline {
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-ink: var(--ink);
+  --color-oranje: var(--oranje);
+  --color-canal: var(--canal);
+  --color-polder: var(--polder);
+  --color-butter: var(--butter);
+  --color-brick: var(--brick);
+  --color-lilac: var(--lilac);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --shadow-hard: 3px 3px 0 0 var(--ink);
+  --shadow-hard-lg: 5px 5px 0 0 var(--ink);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* paper grain */
+.grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0 0.15 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+
+@layer components {
+.ink-card {
+  @apply rounded-2xl border-2 border-ink bg-card;
+  box-shadow: var(--shadow-hard);
+}
+
+.chip {
+  @apply inline-flex items-center gap-1 rounded-full border-[1.5px] border-ink/80 bg-card px-2.5 py-0.5 text-xs font-medium;
+}
+}
+
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { scrollbar-width: none; }
+
+.pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 0.5rem); }
