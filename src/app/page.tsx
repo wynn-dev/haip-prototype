@@ -1,66 +1,56 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Wordmark } from "@/components/brand";
-import { HouseArt } from "@/components/house-art";
+import { MessageCircle, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { AppIcon } from "@/components/brand";
 import { LegalFooter } from "@/components/legal-footer";
 import { buttonVariants } from "@/components/ui/button";
+import { APP_NAME } from "@/lib/brand";
 import { getSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
+
+const POINTS = [
+  { icon: SlidersHorizontal, title: "Matched on how you live", body: "Budget, city, contract length, tidiness, sleep schedule and allergies." },
+  { icon: MessageCircle, title: "Chat when it's mutual", body: "You can only message people who liked you back." },
+  { icon: ShieldCheck, title: "Verified and moderated", body: "Phone 2FA, an 18+ ID check, optional student check, and real people reviewing reports." },
+];
 
 export default async function Landing() {
   const s = await getSession();
   if (s?.stage === "full") redirect("/app");
 
   return (
-    <main className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between px-5 pt-5">
-        <Wordmark />
-        <Link href="/login" className="text-sm font-semibold underline decoration-2 underline-offset-4">
-          Log in
-        </Link>
-      </header>
-
-      <section className="px-5 pt-8">
-        <p className="chip mb-4 bg-butter">🇳🇱 for students in the Netherlands</p>
-        <h1 className="font-display text-[2.9rem] leading-[0.95] font-extrabold">
-          Find your people <span className="text-oranje">before</span> you find the place.
+    <main className="flex flex-1 flex-col bg-surface">
+      <div className="flex flex-1 flex-col px-8 pt-14">
+        <AppIcon className="size-16" />
+        <h1 className="mt-6 text-[34px] leading-[1.1] font-bold tracking-[-0.035em]">
+          Find a housemate who lives like you do.
         </h1>
-        <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
-          Swipe on housemates who match how you actually live: budget, area, contract length,
-          cleaning standards, sleep schedule, allergies. Match both ways and you can chat.
+        <p className="mt-3 text-[17px] leading-snug text-label-2">
+          {APP_NAME} is for students and renters in the Netherlands looking for a room, a tenant, or someone to hunt with.
         </p>
-      </section>
 
-      <div className="relative mx-5 mt-7 overflow-hidden rounded-2xl border-2 border-ink shadow-[5px_5px_0_0_var(--ink)]">
-        <HouseArt seed="landing-grachten" count={4} className="h-48 w-full" />
-        <div className="absolute top-3 right-3 rotate-6 rounded-lg border-2 border-ink bg-polder px-2 py-0.5 font-display text-lg font-extrabold text-paper">
-          JA! 92%
-        </div>
+        <ul className="mt-9 mb-6 flex flex-col gap-5">
+          {POINTS.map((p) => (
+            <li key={p.title} className="flex gap-4">
+              <p.icon className="mt-0.5 size-7 shrink-0 text-tint" strokeWidth={1.75} />
+              <div>
+                <p className="text-[15px] font-semibold">{p.title}</p>
+                <p className="text-[15px] leading-snug text-label-2">{p.body}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
 
-      <section className="grid grid-cols-3 gap-2 px-5 pt-6 text-center">
-        {[
-          ["🏠", "Have a room", "find a tenant"],
-          ["🎒", "Need a room", "find a place"],
-          ["🤝", "Team up", "hunt together"],
-        ].map(([e, t, s]) => (
-          <div key={t} className="rounded-xl border-[1.5px] border-ink/70 bg-card px-1 py-3">
-            <div className="text-2xl">{e}</div>
-            <div className="mt-1 text-xs font-bold">{t}</div>
-            <div className="text-[11px] text-muted-foreground">{s}</div>
-          </div>
-        ))}
-      </section>
-
-      <div className="mt-auto flex flex-col gap-2.5 px-5 pt-8">
-        <Link href="/signup" className={cn(buttonVariants({ variant: "ink", size: "xl" }), "h-13")}>
-          Get started, it&apos;s free
+      <div className="sticky bottom-0 flex flex-col gap-1 bg-surface/90 px-6 pt-3 backdrop-blur-xl">
+        <Link href="/signup" className={cn(buttonVariants({ variant: "filled", size: "xl" }), "w-full")}>
+          Create account
         </Link>
-        <p className="text-center text-xs text-muted-foreground">
-          Verified 18+ · phone 2FA · optional student check
-        </p>
+        <Link href="/login" className={cn(buttonVariants({ variant: "plain", size: "xl" }), "w-full font-medium")}>
+          I already have an account
+        </Link>
+        <LegalFooter />
       </div>
-      <LegalFooter />
     </main>
   );
 }

@@ -3,18 +3,20 @@
 import { useActionState } from "react";
 import { submitAppeal } from "@/app/actions/moderation";
 import { FormError } from "@/components/field";
+import { Section } from "@/components/ios";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 
 export function AppealForm() {
   const [state, action, pending] = useActionState(submitAppeal, undefined);
   return (
     <form action={action} className="flex flex-col gap-3">
-      <h2 className="font-display text-2xl font-bold">Think we got it wrong?</h2>
-      <p className="text-sm text-muted-foreground">Tell us what happened. Appeals are reviewed by a person, usually within 3 working days.</p>
-      <Textarea name="message" rows={6} className="min-h-36" required minLength={20} placeholder="Explain why the removal was a mistake…" />
+      <Section header="Appeal" footer="Tell us what happened. A person reviews every appeal, usually within 3 working days.">
+        <textarea name="message" rows={5} required minLength={20} placeholder="Why do you think this was a mistake?" className="block w-full resize-none bg-transparent px-4 py-3 text-[17px] outline-none placeholder:text-label-3" />
+      </Section>
       <FormError msg={state?.error} />
-      <Button type="submit" variant="ink" size="xl" disabled={pending}>{pending ? "Sending…" : "Submit appeal"}</Button>
+      <div className="px-4">
+        <Button type="submit" variant="filled" size="xl" className="w-full" disabled={pending}>{pending ? "Sending…" : "Submit appeal"}</Button>
+      </div>
     </form>
   );
 }

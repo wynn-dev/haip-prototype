@@ -2,17 +2,15 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Heart, MoreHorizontal, X } from "lucide-react";
+import { Heart, Inbox, MoreHorizontal, X } from "lucide-react";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "motion/react";
 import { toast } from "sonner";
 import { swipe } from "@/app/actions/swipe";
-import { HouseArt } from "@/components/house-art";
 import { PersonAvatar } from "@/components/person-avatar";
 import { ProfileCard } from "@/components/profile-card";
 import { SafetyDrawer } from "@/components/report-sheet";
 import { buttonVariants } from "@/components/ui/button";
 import type { CardData } from "@/lib/deck";
-import { DAILY_LIKES } from "@/lib/options";
 import { cn } from "@/lib/utils";
 
 const THRESHOLD = 110;
@@ -21,20 +19,21 @@ function SwipeCard({
   card,
   onDecide,
   forced,
+  onMore,
 }: {
   card: CardData;
   onDecide: (d: "like" | "pass") => void;
   forced: "like" | "pass" | null;
+  onMore: () => void;
 }) {
   const x = useMotionValue(0);
-  const rotate = useTransform(x, [-250, 250], [-14, 14]);
-  const yes = useTransform(x, [20, THRESHOLD], [0, 1]);
-  const no = useTransform(x, [-THRESHOLD, -20], [1, 0]);
+  const rotate = useTransform(x, [-300, 300], [-10, 10]);
+  const likeOpacity = useTransform(x, [30, THRESHOLD], [0, 1]);
+  const passOpacity = useTransform(x, [-THRESHOLD, -30], [1, 0]);
 
   const fly = (d: "like" | "pass") =>
-    animate(x, d === "like" ? 600 : -600, { duration: 0.28, ease: "easeIn" }).then(() => onDecide(d));
+    animate(x, d === "like" ? 520 : -520, { duration: 0.3, ease: [0.4, 0, 1, 1] }).then(() => onDecide(d));
 
-  // button presses animate the same card out
   useEffect(() => {
     if (forced) void fly(forced);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -42,28 +41,35 @@ function SwipeCard({
 
   return (
     <motion.div
-      className="absolute inset-0 cursor-grab touch-pan-y active:cursor-grabbing"
+      className="absolute inset-0 touch-pan-y"
       style={{ x, rotate }}
       drag="x"
       dragDirectionLock
       dragSnapToOrigin
-      dragElastic={0.9}
+      dragElastic={0.85}
       onDragEnd={(_, info: PanInfo) => {
         if (info.offset.x > THRESHOLD || info.velocity.x > 700) void fly("like");
         else if (info.offset.x < -THRESHOLD || info.velocity.x < -700) void fly("pass");
       }}
-      initial={{ scale: 0.96, y: 10 }}
-      animate={{ scale: 1, y: 0 }}
+      initial={{ scale: 0.95, opacity: 0.6 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.2 }}
     >
-      <div className="h-full overflow-y-auto overscroll-contain rounded-[1.6rem] shadow-[5px_5px_0_0_var(--ink)] scrollbar-none">
-        <ProfileCard c={card} />
-        <div className="h-24" />
+      <div className="h-full overflow-y-auto overscroll-contain rounded-[28px] shadow-[var(--shadow-card)] scrollbar-none [container-type:size]">
+        <ProfileCard c={card} fill />
       </div>
-      <motion.div style={{ opacity: yes }} className="pointer-events-none absolute top-10 left-5 -rotate-12 rounded-xl border-4 border-polder bg-paper/90 px-3 py-1 font-display text-4xl font-extrabold text-polder">
-        JA!
+      <button
+        onClick={onMore}
+        className="absolute top-5 left-4 grid size-8 place-items-center rounded-full bg-black/40 text-white backdrop-blur-md"
+        aria-label="Report or block"
+      >
+        <MoreHorizontal className="size-5" />
+      </button>
+      <motion.div style={{ opacity: likeOpacity }} className="pointer-events-none absolute inset-0 grid place-items-center rounded-[28px] bg-green/15">
+        <span className="grid size-24 place-items-center rounded-full bg-green text-white shadow-lg"><Heart className="size-11 fill-white" /></span>
       </motion.div>
-      <motion.div style={{ opacity: no }} className="pointer-events-none absolute top-10 right-5 rotate-12 rounded-xl border-4 border-brick bg-paper/90 px-3 py-1 font-display text-4xl font-extrabold text-brick">
-        NEE
+      <motion.div style={{ opacity: passOpacity }} className="pointer-events-none absolute inset-0 grid place-items-center rounded-[28px] bg-black/10">
+        <span className="grid size-24 place-items-center rounded-full bg-surface text-label shadow-lg"><X className="size-11" strokeWidth={2.5} /></span>
       </motion.div>
     </motion.div>
   );
@@ -105,59 +111,49 @@ export function Deck({
 
   const press = (d: "like" | "pass") => {
     if (!top || forced) return;
-    if (d === "like" && likes <= 0) return void toast.error("Out of likes for today ☕ Come back tomorrow.");
+    if (d === "like" && likes <= 0) return void toast("No likes left today", { description: "They refill 24 hours after you use them." });
     setForced(d);
   };
 
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="flex items-center justify-between px-5 pb-2">
-        <div className="flex items-center gap-1.5" title="Likes refill on a rolling 24h window">
-          {Array.from({ length: 5 }, (_, i) => (
-            <span key={i} className={cn("h-2 w-5 rounded-full border-[1.5px] border-ink", i < Math.ceil((likes / DAILY_LIKES) * 5) ? "bg-oranje" : "bg-paper")} />
-          ))}
-          <span className="ml-1 font-mono text-xs">{likes} likes left</span>
-        </div>
-        {top && (
-          <button onClick={() => setSafety(true)} className="grid size-8 place-items-center rounded-full border-[1.5px] border-ink bg-card" aria-label="Report or block">
-            <MoreHorizontal className="size-4" />
-          </button>
-        )}
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <p className="px-4 pb-3 text-[15px] text-label-2">
+        {likes > 0 ? `${likes} likes left today` : "No likes left today"}
+      </p>
 
-      <div className="relative mx-4 flex-1">
+      <div className="relative mx-3 min-h-0 flex-1">
         {cards.length === 0 ? (
           <EmptyDeck />
         ) : (
           <>
             {cards[1] && (
-              <div className="absolute inset-0 translate-y-2 scale-[0.96] overflow-hidden rounded-[1.6rem] opacity-70">
-                <ProfileCard c={cards[1]} />
+              <div className="absolute inset-0 scale-[0.95] overflow-hidden rounded-[28px] opacity-60 [container-type:size]">
+                <ProfileCard c={cards[1]} fill />
               </div>
             )}
             <AnimatePresence>
-              <SwipeCard key={top.userId} card={top} onDecide={decide} forced={forced} />
+              <SwipeCard key={top.userId} card={top} onDecide={decide} forced={forced} onMore={() => setSafety(true)} />
             </AnimatePresence>
           </>
         )}
       </div>
 
-      <div className="relative z-10 -mt-14 flex items-center justify-center gap-6 pb-4">
+      <div className="flex shrink-0 items-center justify-center gap-8 py-4">
         <button
           onClick={() => press("pass")}
           disabled={!top}
-          className="grid size-16 place-items-center rounded-full border-2 border-ink bg-card shadow-[3px_3px_0_0_var(--ink)] transition-transform active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:opacity-40"
+          className="grid size-[60px] place-items-center rounded-full bg-surface shadow-[var(--shadow-float)] transition-transform active:scale-90 disabled:opacity-40"
           aria-label="Pass"
         >
-          <X className="size-8 text-brick" strokeWidth={3} />
+          <X className="size-7 text-label-2" strokeWidth={2.5} />
         </button>
         <button
           onClick={() => press("like")}
           disabled={!top}
-          className="grid size-[4.5rem] place-items-center rounded-full border-2 border-ink bg-oranje shadow-[3px_3px_0_0_var(--ink)] transition-transform active:translate-x-[3px] active:translate-y-[3px] active:shadow-none disabled:opacity-40"
+          className="grid size-[60px] place-items-center rounded-full bg-label shadow-[var(--shadow-float)] transition-transform active:scale-90 disabled:opacity-40"
           aria-label="Like"
         >
-          <Heart className="size-8 fill-paper text-ink" strokeWidth={2.5} />
+          <Heart className="size-7 fill-on-label text-on-label" strokeWidth={0} />
         </button>
       </div>
 
@@ -171,19 +167,19 @@ export function Deck({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 mx-auto flex max-w-[440px] flex-col items-center justify-center gap-6 bg-oranje px-8 text-center"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-bg/85 px-8 text-center backdrop-blur-2xl"
           >
-            <motion.h2 initial={{ scale: 0.5, rotate: -8 }} animate={{ scale: 1, rotate: -4 }} transition={{ type: "spring", bounce: 0.6 }} className="font-display text-6xl leading-none font-extrabold">
-              Gezellig!
-            </motion.h2>
-            <p className="text-lg font-semibold">You and {match.card.username} like each other.</p>
-            <div className="flex items-center">
-              <PersonAvatar name={me.username} src={me.photoUrl} className="size-24 -rotate-6 text-3xl shadow-[3px_3px_0_0_var(--ink)]" />
-              <PersonAvatar name={match.card.username} src={match.card.photoUrl} className="-ml-4 size-24 rotate-6 text-3xl shadow-[3px_3px_0_0_var(--ink)]" />
-            </div>
-            <div className="flex w-full flex-col gap-2">
-              <Link href={`/app/chat/${match.id}`} className={cn(buttonVariants({ variant: "ink", size: "xl" }))}>Say hoi 👋</Link>
-              <button onClick={() => setMatch(null)} className="py-2 font-semibold underline underline-offset-4">Keep swiping</button>
+            <motion.div initial={{ scale: 0.9, y: 12 }} animate={{ scale: 1, y: 0 }} transition={{ type: "spring", stiffness: 300, damping: 22 }} className="flex flex-col items-center">
+              <div className="flex items-center">
+                <PersonAvatar name={me.username} src={me.photoUrl} className="size-28 text-5xl ring-4 ring-bg" />
+                <PersonAvatar name={match.card.username} src={match.card.photoUrl} className="-ml-6 size-28 text-5xl ring-4 ring-bg" />
+              </div>
+              <h2 className="mt-7 text-[34px] font-bold tracking-[-0.03em]">It&apos;s a match</h2>
+              <p className="mt-1 max-w-72 text-[17px] text-label-2">You and {match.card.username} liked each other. Say hello.</p>
+            </motion.div>
+            <div className="mt-10 flex w-full max-w-sm flex-col gap-1">
+              <Link href={`/app/chat/${match.id}`} className={buttonVariants({ variant: "filled", size: "xl" })}>Send a message</Link>
+              <button onClick={() => setMatch(null)} className={cn(buttonVariants({ variant: "plain", size: "xl" }), "font-medium")}>Keep browsing</button>
             </div>
           </motion.div>
         )}
@@ -194,15 +190,13 @@ export function Deck({
 
 function EmptyDeck() {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 rounded-[1.6rem] border-2 border-dashed border-ink/40 p-6 text-center">
-      <div className="w-40 overflow-hidden rounded-2xl border-2 border-ink">
-        <HouseArt seed="empty-street" className="h-28 w-full" />
-      </div>
-      <h2 className="font-display text-2xl font-extrabold">That&apos;s everyone for now</h2>
-      <p className="text-sm text-muted-foreground">
-        New people join every day. Widening your budget, cities or age range shows you more.
-      </p>
-      <Link href="/app/me/edit" className={buttonVariants({ variant: "paper", size: "xl" })}>Tweak my preferences</Link>
+    <div className="flex h-full flex-col items-center justify-center gap-3 rounded-[28px] bg-surface p-8 text-center">
+      <span className="grid size-16 place-items-center rounded-full bg-fill">
+        <Inbox className="size-8 text-label-2" strokeWidth={1.5} />
+      </span>
+      <h2 className="mt-2 text-[22px] font-bold tracking-[-0.02em]">You&apos;re all caught up</h2>
+      <p className="text-[15px] text-label-2">New people join every day. A wider budget, more cities or a bigger age range will show you more.</p>
+      <Link href="/app/me/edit" className={cn(buttonVariants({ variant: "tinted", size: "xl" }), "mt-3")}>Adjust preferences</Link>
     </div>
   );
 }

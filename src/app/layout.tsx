@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { APP_NAME, APP_TAGLINE } from "@/lib/brand";
 import "./globals.css";
 
-const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-display", weight: ["500", "700", "800"] });
-const body = Instrument_Sans({ subsets: ["latin"], variable: "--font-body" });
-const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", weight: ["500"] });
+const sans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
+const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
   title: { default: APP_NAME, template: `%s · ${APP_NAME}` },
@@ -15,7 +14,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f5efe4",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f2f2f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -23,10 +25,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
-      <body className="min-h-dvh bg-paper-2 sm:py-6">
-        {/* phone-width column; on desktop it floats like a device */}
-        <div className="grain relative mx-auto flex min-h-dvh w-full max-w-[440px] flex-col bg-paper sm:min-h-[calc(100dvh-3rem)] sm:overflow-hidden sm:rounded-[2.2rem] sm:border-2 sm:border-ink sm:shadow-[8px_8px_0_0_var(--ink)]">
+    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+      <body className="min-h-dvh font-sans sm:grid sm:place-items-center sm:bg-[#e5e5ea] sm:py-8 dark:sm:bg-[#111]">
+        {/* phone-width column; on desktop it sits in a device-like frame */}
+        <div
+          id="app"
+          className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col bg-bg sm:h-[min(932px,calc(100dvh-4rem))] sm:min-h-0 sm:overflow-y-auto sm:rounded-[44px] sm:shadow-[0_0_0_10px_#1c1c1e,0_30px_80px_rgb(0_0_0/0.35)] sm:scrollbar-none"
+        >
           {children}
         </div>
         <Toaster position="top-center" />

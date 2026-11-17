@@ -39,23 +39,23 @@ export const GENDERS = [
 ] as const;
 
 export const SLEEP = [
-  { value: "early", label: "Early bird", emoji: "🌅" },
-  { value: "flexible", label: "Flexible", emoji: "🌗" },
-  { value: "night", label: "Night owl", emoji: "🦉" },
+  { value: "early", label: "Early bird" },
+  { value: "flexible", label: "Flexible" },
+  { value: "night", label: "Night owl" },
 ] as const;
 
 export const GUESTS = [
-  { value: "rarely", label: "Rarely", emoji: "🤫" },
-  { value: "sometimes", label: "Sometimes", emoji: "🍕" },
-  { value: "often", label: "Often", emoji: "🎉" },
+  { value: "rarely", label: "Rarely" },
+  { value: "sometimes", label: "Sometimes" },
+  { value: "often", label: "Often" },
 ] as const;
 
 export const CLEANLINESS = ["Creative chaos", "Relaxed", "Tidy-ish", "Tidy", "Spotless"];
 
 export const PETS = [
-  { value: "cat", label: "Cat", emoji: "🐈" },
-  { value: "dog", label: "Dog", emoji: "🐕" },
-  { value: "small", label: "Small pet", emoji: "🐹" },
+  { value: "cat", label: "Cat" },
+  { value: "dog", label: "Dog" },
+  { value: "small", label: "Small pet" },
 ] as const;
 
 export const ALLERGIES = [

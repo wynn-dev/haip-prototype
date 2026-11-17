@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { BadgeCheck, GraduationCap, Landmark, ScanFace } from "lucide-react";
+import { Check, GraduationCap, IdCard, Landmark, ScanFace } from "lucide-react";
 import { toast } from "sonner";
 import { confirmStudentCode, sendStudentCode, verifyAge } from "@/app/actions/profile";
 import { DemoSms } from "@/components/demo-sms";
+import { Row, Section, inputCls } from "@/components/ios";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 export type VerifyState = { ageVerified: boolean; studentInstitution: string | null };
 
@@ -17,46 +17,27 @@ export function VerifySection({ state }: { state: VerifyState }) {
   const [code, setCode] = useState("");
 
   return (
-    <div className="flex flex-col gap-5">
-      <section className="ink-card p-4">
-        <div className="flex items-center gap-2">
-          <h3 className="font-display text-lg font-bold">18+ ID check</h3>
-          <span className="chip bg-brick text-paper">required</span>
-        </div>
+    <div className="flex flex-col gap-6">
+      <Section
+        header="Age check · required"
+        footer={state.ageVerified ? undefined : "A date of birth is easy to fake. A trusted provider confirms you're 18+, and we only keep the yes/no result. Prototype: both options are simulated."}
+      >
         {state.ageVerified ? (
-          <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-polder">
-            <BadgeCheck className="size-5" /> Age verified
-          </p>
+          <Row icon={IdCard} iconBg="bg-green" label="Age verified" value={<Check className="size-5 text-green" strokeWidth={3} />} />
         ) : (
           <>
-            <p className="mt-1 text-sm text-muted-foreground">
-              A date of birth alone is easy to fake. We confirm you&apos;re 18+ with a trusted provider and only keep the yes/no result.
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <Button variant="paper" size="xl" className="h-auto flex-col py-3 text-sm" disabled={pending} onClick={() => start(async () => { await verifyAge("idin"); toast.success("Age verified via iDIN (demo)"); })}>
-                <Landmark className="size-5" /> Via your bank (iDIN)
-              </Button>
-              <Button variant="paper" size="xl" className="h-auto flex-col py-3 text-sm" disabled={pending} onClick={() => start(async () => { await verifyAge("id_scan"); toast.success("ID scan accepted (demo)"); })}>
-                <ScanFace className="size-5" /> Scan ID + selfie
-              </Button>
-            </div>
-            <p className="mt-2 text-[11px] text-muted-foreground">Prototype: both options are simulated.</p>
+            <Row icon={Landmark} iconBg="bg-tint" label="Verify with your bank (iDIN)" chevron onClick={() => start(async () => { await verifyAge("idin"); toast.success("Age verified"); })} />
+            <Row icon={ScanFace} iconBg="bg-label-2" label="Scan ID and take a selfie" chevron onClick={() => start(async () => { await verifyAge("id_scan"); toast.success("Age verified"); })} />
           </>
         )}
-      </section>
+      </Section>
 
-      <section className="ink-card p-4">
-        <div className="flex items-center gap-2">
-          <h3 className="font-display text-lg font-bold">Student check</h3>
-          <span className="chip">optional</span>
-        </div>
+      <Section header="Student check · optional" footer={state.studentInstitution ? undefined : "Adds a verified-student badge to your profile. We never show your e-mail address."}>
         {state.studentInstitution ? (
-          <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-canal">
-            <GraduationCap className="size-5" /> Verified student · {state.studentInstitution}
-          </p>
+          <Row icon={GraduationCap} iconBg="bg-tint" label="Verified student" detail={state.studentInstitution} value={<Check className="size-5 text-green" strokeWidth={3} />} />
         ) : !sent ? (
           <form
-            className="mt-2 flex flex-col gap-2"
+            className="flex items-center pr-2"
             onSubmit={(e) => {
               e.preventDefault();
               start(async () => {
@@ -66,31 +47,31 @@ export function VerifySection({ state }: { state: VerifyState }) {
               });
             }}
           >
-            <p className="text-sm text-muted-foreground">
-              Get the <span className="font-semibold text-canal">🎓 student</span> badge by confirming your university e-mail. We don&apos;t show the address to anyone.
-            </p>
-            <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="s1234567@student.uva.nl" />
-            <Button type="submit" variant="ink" size="xl" disabled={pending}>Send code</Button>
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="University e-mail" className={inputCls} />
+            <Button type="submit" variant="plain" disabled={pending || !email} className="h-9 px-2 text-[17px]">Send code</Button>
           </form>
         ) : (
           <form
-            className="mt-2 flex flex-col gap-2"
+            className="flex items-center pr-2"
             onSubmit={(e) => {
               e.preventDefault();
               start(async () => {
                 const r = await confirmStudentCode(code);
                 if (r.error) toast.error(r.error);
-                else toast.success(`You're verified at ${sent.institution} 🎓`);
+                else toast.success(`Verified at ${sent.institution}`);
               });
             }}
           >
-            {sent.code && <DemoSms code={sent.code} from="E-mail" />}
-            <p className="text-sm">Code sent to your {sent.institution} inbox.</p>
-            <Input inputMode="numeric" maxLength={6} required value={code} onChange={(e) => setCode(e.target.value)} placeholder="6-digit code" className="font-mono tracking-widest" />
-            <Button type="submit" variant="ink" size="xl" disabled={pending}>Confirm</Button>
+            <input inputMode="numeric" maxLength={6} required value={code} onChange={(e) => setCode(e.target.value)} placeholder="6-digit code" className={inputCls + " tabular-nums"} />
+            <Button type="submit" variant="plain" disabled={pending || code.length < 6} className="h-9 px-2 text-[17px]">Confirm</Button>
           </form>
         )}
-      </section>
+      </Section>
+      {sent?.code && !state.studentInstitution && (
+        <div className="px-4">
+          <DemoSms code={sent.code} from="Mail" />
+        </div>
+      )}
     </div>
   );
 }

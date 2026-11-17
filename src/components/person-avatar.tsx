@@ -1,27 +1,29 @@
 import { cn } from "@/lib/utils";
 
-const BG = ["var(--butter)", "var(--lilac)", "#9fd7ff", "#ffb4a2", "#b8e3c6"];
+// Muted, iOS-contact-style gradients for people without a photo
+const GRADIENTS = [
+  "from-[#a1a1aa] to-[#71717a]",
+  "from-[#93c5fd] to-[#3b82f6]",
+  "from-[#86efac] to-[#22c55e]",
+  "from-[#fdba74] to-[#f97316]",
+  "from-[#c4b5fd] to-[#8b5cf6]",
+  "from-[#f9a8d4] to-[#ec4899]",
+];
 
-export function PersonAvatar({
-  name,
-  src,
-  className,
-}: {
-  name: string;
-  src?: string | null;
-  className?: string;
-}) {
-  const bg = BG[(name.charCodeAt(0) + name.length) % BG.length];
+export function gradientFor(name: string) {
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return GRADIENTS[h % GRADIENTS.length];
+}
+
+export function PersonAvatar({ name, src, className }: { name: string; src?: string | null; className?: string }) {
   return (
-    <div
-      className={cn("relative grid shrink-0 place-items-center overflow-hidden rounded-full border-2 border-ink", className)}
-      style={{ background: bg }}
-    >
+    <div className={cn("relative grid shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-b text-white", gradientFor(name), className)}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt="" className="size-full object-cover" />
+        <img src={src} alt="" className="size-full object-cover" draggable={false} />
       ) : (
-        <span className="font-display text-[1.1em] font-extrabold uppercase">{name.slice(0, 1)}</span>
+        <span className="text-[0.42em] font-semibold uppercase">{name.slice(0, 1)}</span>
       )}
     </div>
   );

@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { logout } from "@/app/actions/auth";
-import { Wordmark } from "@/components/brand";
+import { AppIcon } from "@/components/brand";
+import { Row, Section } from "@/components/ios";
 import { getSession } from "@/lib/session";
 import { AppealForm } from "./appeal-form";
 
@@ -18,39 +19,37 @@ export default async function RemovedPage() {
   const latest = appeals[0];
 
   return (
-    <main className="flex flex-1 flex-col gap-5 px-5 pt-5 pb-8">
-      <Wordmark />
-      <div>
-        <h1 className="font-display text-4xl leading-none font-extrabold">Your account was removed</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Removed on {u.removedAt ? new Date(u.removedAt).toLocaleDateString("en-NL", { dateStyle: "long" }) : "–"}. Your profile is hidden and you can&apos;t swipe or chat.
+    <main className="flex flex-1 flex-col gap-8 pt-10 pb-10">
+      <div className="flex flex-col items-center gap-3 px-8 text-center">
+        <AppIcon className="size-14" />
+        <h1 className="mt-3 text-[28px] leading-tight font-bold tracking-[-0.03em]">Your account has been removed</h1>
+        <p className="text-[15px] text-label-2">
+          {u.removedAt ? new Date(u.removedAt).toLocaleDateString("en-GB", { dateStyle: "long" }) : ""}. Your profile is hidden and you can&apos;t browse or chat.
         </p>
       </div>
-      <section className="ink-card border-brick bg-brick/5 p-4">
-        <p className="text-xs font-bold tracking-widest text-brick uppercase">Reason</p>
-        <p className="mt-1 text-[15px]">{u.removalReason}</p>
-      </section>
+
+      <Section header="Reason">
+        <p className="px-4 py-3 text-[15px] leading-relaxed">{u.removalReason}</p>
+      </Section>
 
       {latest?.status === "pending" ? (
-        <section className="ink-card bg-butter/50 p-4">
-          <p className="font-display text-lg font-bold">Appeal in review ⏳</p>
-          <p className="text-sm">A different team member than the one who removed you will look at it. We&apos;ll reply by e-mail.</p>
-        </section>
+        <Section header="Appeal" footer="A different team member than the one who removed you reviews it. We'll reply by e-mail.">
+          <Row label="In review" value="Submitted" />
+        </Section>
       ) : latest?.status === "rejected" ? (
-        <section className="ink-card p-4">
-          <p className="font-display text-lg font-bold">Appeal rejected</p>
-          {latest.response && <p className="mt-1 text-sm">&ldquo;{latest.response}&rdquo;</p>}
-          <p className="mt-2 text-xs text-muted-foreground">You can still export or delete your data, or contact us.</p>
-        </section>
+        <Section header="Appeal" footer="You can still export or delete your data, or contact us.">
+          <Row label="Rejected" />
+          {latest.response && <p className="px-4 py-3 text-[15px] text-label-2">{latest.response}</p>}
+        </Section>
       ) : (
         <AppealForm />
       )}
 
-      <div className="mt-auto flex flex-col gap-2 text-center text-sm">
-        <a href="/api/me/export" download className="font-semibold underline">Export my data</a>
-        <a href="/contact" className="font-semibold underline">Talk to a human</a>
-        <form action={logout}><button className="font-semibold underline">Log out</button></form>
-      </div>
+      <Section>
+        <Row label="Export my data" tint href="/api/me/export" download chevron={false} />
+        <Row label="Contact us" tint href="/contact" chevron={false} />
+        <form action={logout}><button className="flex min-h-11 w-full items-center px-4 text-tint">Log out</button></form>
+      </Section>
     </main>
   );
 }

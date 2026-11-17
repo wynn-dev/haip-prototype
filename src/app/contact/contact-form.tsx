@@ -1,34 +1,38 @@
 "use client";
 
 import { useActionState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { contactTeam } from "@/app/actions/safety";
-import { Field, FormError } from "@/components/field";
+import { FormError } from "@/components/field";
+import { BottomBar, Section, inputCls } from "@/components/ios";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 
 export function ContactForm({ channel, defaultEmail }: { channel: "user" | "authority"; defaultEmail: string }) {
   const [state, action, pending] = useActionState(contactTeam, undefined);
   if (state?.ok)
     return (
-      <div className="ink-card bg-polder/10 p-5 text-center">
-        <div className="text-5xl">📬</div>
-        <p className="mt-2 font-display text-xl font-bold">Got it, thanks.</p>
-        <p className="text-sm text-muted-foreground">Someone from our team will reply by e-mail.</p>
+      <div className="flex flex-col items-center gap-2 px-8 pt-10 text-center">
+        <CheckCircle2 className="size-14 text-green" strokeWidth={1.5} />
+        <p className="text-[22px] font-bold tracking-[-0.02em]">Message sent</p>
+        <p className="text-[15px] text-label-2">Someone from our team will reply by e-mail.</p>
       </div>
     );
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form action={action} className="flex flex-1 flex-col gap-6">
       <input type="hidden" name="channel" value={channel} />
-      <Field label="Your name" htmlFor="name"><Input id="name" name="name" required /></Field>
-      <Field label="E-mail" htmlFor="email"><Input id="email" name="email" type="email" defaultValue={defaultEmail} required /></Field>
-      {channel === "authority" && (
-        <Field label="Organisation" htmlFor="org"><Input id="org" name="organisation" required placeholder="e.g. Politie Eenheid Amsterdam" /></Field>
-      )}
-      <Field label="Subject" htmlFor="subject"><Input id="subject" name="subject" required /></Field>
-      <Field label="Message" htmlFor="body"><Textarea id="body" name="body" rows={6} required className="min-h-36" /></Field>
+      <Section>
+        <input name="name" required placeholder="Your name" className={inputCls} />
+        <input name="email" type="email" defaultValue={defaultEmail} required placeholder="E-mail" className={inputCls} />
+        {channel === "authority" && <input name="organisation" required placeholder="Organisation" className={inputCls} />}
+      </Section>
+      <Section footer={channel === "authority" ? "Include a case or reference number if you have one." : "In immediate danger? Call 112."}>
+        <input name="subject" required placeholder="Subject" className={inputCls} />
+        <textarea name="body" rows={6} required placeholder="Message" className="block w-full resize-none bg-transparent px-4 py-3 text-[17px] outline-none placeholder:text-label-3" />
+      </Section>
       <FormError msg={state?.error} />
-      <Button type="submit" variant="ink" size="xl" disabled={pending}>{pending ? "Sending…" : "Send to the team"}</Button>
+      <BottomBar>
+        <Button type="submit" variant="filled" size="xl" className="w-full" disabled={pending}>{pending ? "Sending…" : "Send"}</Button>
+      </BottomBar>
     </form>
   );
 }

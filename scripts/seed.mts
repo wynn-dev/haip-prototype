@@ -17,8 +17,18 @@ const pick = <T,>(a: readonly T[]) => a[Math.floor(rnd() * a.length)];
 const some = <T,>(a: readonly T[], n: number) => [...a].sort(() => rnd() - 0.5).slice(0, n);
 const int = (a: number, b: number) => a + Math.floor(rnd() * (b - a + 1));
 
-const avatar = (s: string) =>
-  `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(s)}&backgroundColor=ffd36e,c9b8ff,9fd7ff,ffb4a2,b8e3c6`;
+// CC0 photos hosted in our R2 bucket (see scripts/SEED_PHOTOS.md)
+const BASE = (process.env.R2_PUBLIC_URL ?? "").replace(/\/$/, "");
+const photo = (name: string) => (BASE ? `${BASE}/seed/${name}.jpg` : null);
+const pools = {
+  woman: ["women-00", "women-01", "women-06", "women-08", "women-12", "women-13", "women-16", "women-21", "women-28", "women-29"],
+  man: ["men-00", "men-14", "men-21", "men-28", "men2-05", "men2-08", "men2-10", "men2-13", "men2-23", "men2-29"],
+  rooms: ["rooms-00", "rooms-01", "rooms-03", "rooms-04", "rooms-10", "rooms-22", "rooms-24", "rooms-27", "rooms3-00", "rooms3-09", "rooms3-12", "rooms3-13", "rooms3-15"],
+};
+const cursor = { woman: 0, man: 0, rooms: 0 };
+const nextFrom = (k: keyof typeof pools) => pools[k][cursor[k]++ % pools[k].length];
+const portraitFor = (g: string) => photo(nextFrom(g === "man" ? "man" : g === "woman" ? "woman" : rnd() < 0.5 ? "woman" : "man"));
+
 const dob = (age: number) => {
   const d = new Date();
   d.setFullYear(d.getFullYear() - age, int(0, 11), int(1, 28));
@@ -97,7 +107,7 @@ function randomPerson(i: number): Spec {
     profile: {
       username: name,
       gender: g,
-      photoUrl: avatar(name),
+      photoUrl: portraitFor(g),
       bio: pick(BIOS),
       languages: ["English", ...some(LANG_EXTRA, int(0, 2))],
       cleanliness: int(2, 5),
@@ -133,7 +143,7 @@ function randomPerson(i: number): Spec {
       roomsAvailable: 1,
       householdSize: int(2, 5),
       features: some(FEATS, int(3, 6)).concat(smokes ? ["smoking_allowed"] : []),
-      photos: [],
+      photos: [photo(nextFrom("rooms")), photo(nextFrom("rooms"))].filter((x): x is string => !!x),
     };
   }
   return spec;
@@ -148,7 +158,7 @@ const hero: Spec[] = [
     profile: {
       username: "sanne",
       gender: "woman",
-      photoUrl: avatar("sanne-b"),
+      photoUrl: photo("women-07"),
       bio: "International MSc student (psych) moving from Lisbon. Tidy, night owl, will bake for the house.",
       languages: ["English", "Portuguese", "Dutch"],
       cleanliness: 4,
@@ -173,7 +183,7 @@ const hero: Spec[] = [
     profile: {
       username: "daan",
       gender: "man",
-      photoUrl: avatar("daan-u"),
+      photoUrl: photo("men2-16"),
       bio: "Our housemate is moving to Berlin, so we have a room free! We're 2 chill master's students who do a weekly house dinner.",
       languages: ["Dutch", "English", "German"],
       cleanliness: 4,
@@ -193,7 +203,7 @@ const hero: Spec[] = [
       roomsAvailable: 1,
       householdSize: 3,
       features: ["shared_kitchen", "shared_bathroom", "furnished", "washing_machine", "bike_storage", "registration"],
-      photos: [],
+      photos: [photo("rooms-02"), photo("rooms3-01"), photo("rooms3-14")].filter((x): x is string => !!x),
     },
   },
   {

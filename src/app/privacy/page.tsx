@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { LargeTitle, NavBar, Row, Section } from "@/components/ios";
 import { DAILY_LIKES } from "@/lib/options";
 
 export const metadata = { title: "Your data" };
@@ -10,8 +9,8 @@ const ROWS: { what: string; why: string; who: string; kept: string }[] = [
   { what: "Date of birth", why: "Proving you're 18+. Others only see your age", who: "Only you & our team", kept: "Until you delete your account" },
   { what: "ID-check result", why: "Reliable 18+ verification. We store only pass/fail and the method, never the document", who: "Only our team", kept: "Until you delete your account" },
   { what: "Student e-mail", why: "Verifying enrolment. Others see only the institution name", who: "Only you & our team", kept: "Until you delete your account" },
-  { what: "Profile (username, photo, gender, age, languages, lifestyle, preferences, allergies)", why: "Shown on your card, used by the matching algorithm", who: "Other users", kept: "Until you delete it" },
-  { what: "Listing (photos, rent, duration, features, neighbourhood)", why: "Shown on your card to tenants", who: "Other users", kept: "Until you delete it" },
+  { what: "Profile", why: "Username, photo, gender, age, languages, lifestyle, preferences and allergies are shown on your card and used for matching", who: "Other users", kept: "Until you delete it" },
+  { what: "Listing", why: "Photos, rent, contract length, features and neighbourhood are shown to people looking for a room", who: "Other users", kept: "Until you delete it" },
   { what: "Exact street address", why: "So matches can visit", who: "Only people you matched with", kept: "Until you delete it" },
   { what: "Swipes (likes & passes)", why: "Never show you the same person twice, create matches, limit likes", who: "Nobody. Others never learn you passed", kept: "Until you delete your account" },
   { what: "Messages", why: "Chat with your matches", who: "You and that match; our team only when a report is filed", kept: "Until you or they delete the account, or unmatch" },
@@ -20,55 +19,44 @@ const ROWS: { what: string; why: string; who: string; kept: string }[] = [
 
 export default function PrivacyPage() {
   return (
-    <main className="flex flex-col gap-5 px-5 pt-4 pb-10">
-      <Link href="/" className="flex items-center gap-1 text-sm font-semibold"><ArrowLeft className="size-4" /> Back</Link>
+    <main className="flex flex-col gap-8 pb-12">
       <div>
-        <p className="chip mb-3 bg-butter">plain-language privacy</p>
-        <h1 className="font-display text-4xl leading-none font-extrabold">What we collect, and why</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          No selling of data, no ads, no tracking pixels. We store data in the EU (Postgres on Neon, images on Cloudflare R2).
-        </p>
+        <NavBar back={true} />
+        <LargeTitle sub="No selling of data, no ads, no tracking. Data is stored in the EU-friendly cloud (Postgres on Neon, photos on Cloudflare R2).">
+          Your data
+        </LargeTitle>
       </div>
 
-      <ul className="flex flex-col gap-3">
-        {ROWS.map((r) => (
-          <li key={r.what} className="ink-card p-4">
-            <p className="font-display text-lg leading-tight font-bold">{r.what}</p>
-            <dl className="mt-2 grid grid-cols-[4.5rem_1fr] gap-x-2 gap-y-1 text-sm">
-              <dt className="text-muted-foreground">Why</dt><dd>{r.why}</dd>
-              <dt className="text-muted-foreground">Who sees</dt><dd className="font-semibold">{r.who}</dd>
-              <dt className="text-muted-foreground">Kept</dt><dd>{r.kept}</dd>
-            </dl>
-          </li>
-        ))}
-      </ul>
+      {ROWS.map((r) => (
+        <Section key={r.what} header={r.what}>
+          <Row label="Why" value={<span className="block max-w-[62%] text-right text-[15px] leading-snug">{r.why}</span>} className="items-start py-3" />
+          <Row label="Who sees it" value={<span className="block max-w-[62%] text-right text-[15px] leading-snug text-label">{r.who}</span>} className="items-start py-3" />
+          <Row label="Kept" value={<span className="block max-w-[62%] text-right text-[15px] leading-snug">{r.kept}</span>} className="items-start py-3" />
+        </Section>
+      ))}
 
-      <section className="ink-card bg-lilac/30 p-4 text-sm">
-        <h2 className="font-display text-xl font-bold">How matching works</h2>
-        <p className="mt-1">
-          You only see people where <b>both</b> of you pass each other&apos;s hard filters: gender and age preferences, dealbreakers, allergies vs pets and smoke,
-          budget vs rent (up to 10% over), and city. The rest is ranked by a compatibility score (tidiness, sleep, guests, languages, timing, budget)
-          that you can see on every card. You get {DAILY_LIKES} likes per 24 hours, so people spread their attention and more people get matches.
+      <Section header="How matching works">
+        <p className="px-4 py-3 text-[15px] leading-relaxed">
+          You only see people where <b>both</b> of you pass each other&apos;s filters: gender and age preferences, dealbreakers, allergies versus
+          pets and smoke, budget versus rent (up to 10% over), and city. Everyone left is ranked by a compatibility score based on tidiness,
+          sleep, guests, languages, timing and budget, which you can see on every card. You get {DAILY_LIKES} likes per 24 hours, so attention
+          spreads out and more people get matches.
         </p>
-      </section>
+      </Section>
 
-      <section className="ink-card p-4 text-sm">
-        <h2 className="font-display text-xl font-bold">Your rights</h2>
-        <ul className="mt-1 list-disc space-y-1 pl-5">
-          <li><b>Export</b>: Me → Export my data gives you everything as a JSON file.</li>
-          <li><b>Delete</b>: Me → Delete my account removes everything immediately.</li>
-          <li><b>Correct</b>: edit your profile anytime.</li>
-          <li><b>Object or ask</b>: <Link href="/contact" className="underline">talk to a human</Link>, or complain to the Autoriteit Persoonsgegevens.</li>
-        </ul>
-      </section>
+      <Section header="Your rights">
+        <Row label="Export everything" detail="Profile → Export my data (JSON)" />
+        <Row label="Delete your account" detail="Profile → Delete account, immediate" />
+        <Row label="Correct your data" detail="Edit your profile at any time" />
+        <Row label="Ask or object" tint href="/contact" detail="Or complain to the Autoriteit Persoonsgegevens" />
+      </Section>
 
-      <section className="ink-card p-4 text-sm">
-        <h2 className="font-display text-xl font-bold">Account removal</h2>
-        <p className="mt-1">
-          We remove accounts for scams, harassment, discrimination, fake identities or being under 18. You&apos;ll always be told the reason
-          when you log in and can appeal once; a different team member reviews the appeal.
+      <Section header="Account removal">
+        <p className="px-4 py-3 text-[15px] leading-relaxed">
+          We remove accounts for scams, harassment, discrimination, fake identities or being under 18. You&apos;ll always see the reason
+          when you log in and can appeal. A different team member reviews the appeal.
         </p>
-      </section>
+      </Section>
     </main>
   );
 }

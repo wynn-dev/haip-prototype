@@ -3,37 +3,49 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { login } from "@/app/actions/auth";
-import { Field, FormError } from "@/components/field";
+import { FormError } from "@/components/field";
+import { BottomBar, LargeTitle, NavBar, inputCls } from "@/components/ios";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(login, undefined);
   return (
-    <form action={action} className="flex flex-1 flex-col gap-4">
-      <div>
-        <h1 className="font-display text-3xl font-extrabold">Welcome back</h1>
-        <p className="mt-1 text-sm text-muted-foreground">We&apos;ll text you a code after this.</p>
+    <form action={action} className="flex flex-1 flex-col">
+      <NavBar back="/" />
+      <LargeTitle sub="We'll text a code to your phone next.">Log in</LargeTitle>
+      <div className="mt-4 flex flex-col gap-6">
+        <section className="px-4">
+          <div className="group-list">
+            <input id="email" name="email" defaultValue={state?.values?.email} type="email" autoComplete="email" required placeholder="E-mail" className={inputCls} />
+            <input id="password" name="password" type="password" autoComplete="current-password" required placeholder="Password" className={inputCls} />
+          </div>
+        </section>
+        <FormError msg={state?.error} />
+        <section className="px-4">
+          <h2 className="section-header">Demo accounts</h2>
+          <div className="group-list text-[15px]">
+            {[
+              ["sanne@demo.test", "Looking for a room"],
+              ["daan@demo.test", "Has a room"],
+              ["admin@demo.test", "Moderator"],
+            ].map(([e, d]) => (
+              <div key={e} className="flex items-center justify-between px-4 py-2.5">
+                <span className="font-mono text-[14px]">{e}</span>
+                <span className="text-label-2">{d}</span>
+              </div>
+            ))}
+          </div>
+          <p className="section-footer">Password for all: roommates</p>
+        </section>
       </div>
-      <Field label="Email" htmlFor="email">
-        <Input id="email" name="email" defaultValue={state?.values?.email} type="email" autoComplete="email" required />
-      </Field>
-      <Field label="Password" htmlFor="password">
-        <Input id="password" name="password" type="password" autoComplete="current-password" required />
-      </Field>
-      <FormError msg={state?.error} />
-      <div className="rounded-xl border-[1.5px] border-dashed border-ink/40 p-3 text-xs text-muted-foreground">
-        <b className="text-ink">Demo accounts</b> (password <code>roommates</code>):<br />
-        sanne@demo.test (tenant) · daan@demo.test (renter) · admin@demo.test (moderator)
-      </div>
-      <div className="mt-auto flex flex-col gap-3 pt-4">
-        <Button type="submit" variant="ink" size="xl" disabled={pending}>
-          {pending ? "Checking…" : "Log in"}
+      <BottomBar>
+        <Button type="submit" variant="filled" size="xl" className="w-full" disabled={pending}>
+          {pending ? "Checking…" : "Continue"}
         </Button>
-        <p className="text-center text-sm">
-          New here? <Link href="/signup" className="font-semibold underline">Make an account</Link>
+        <p className="pt-3 text-center text-[15px] text-label-2">
+          New here? <Link href="/signup" className="text-tint">Create an account</Link>
         </p>
-      </div>
+      </BottomBar>
     </form>
   );
 }

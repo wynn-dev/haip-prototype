@@ -1,28 +1,13 @@
-import Link from "next/link";
-import { BadgeCheck, ChevronRight, Download, GraduationCap, LifeBuoy, LogOut, Pencil, Shield, ShieldCheck, FileText } from "lucide-react";
+import { Download, FileText, GraduationCap, IdCard, LifeBuoy, ShieldCheck, ShieldHalf } from "lucide-react";
 import { logout } from "@/app/actions/auth";
-import { ProfileCard } from "@/components/profile-card";
+import { LargeTitle, Row, Section } from "@/components/ios";
 import { requireUser } from "@/lib/auth";
 import { loadRow, toCard } from "@/lib/deck";
-import { StatusSwitch } from "./status-switch";
 import { DeleteAccount } from "./delete-account";
+import { ProfileHeader } from "./profile-header";
+import { StatusSwitch } from "./status-switch";
 
-export const metadata = { title: "Me" };
-
-function Row({ href, icon: Icon, label, sub, download }: { href: string; icon: React.ElementType; label: string; sub?: string; download?: boolean }) {
-  const inner = (
-    <>
-      <span className="grid size-9 place-items-center rounded-xl border-[1.5px] border-ink bg-paper"><Icon className="size-4.5" /></span>
-      <span className="flex-1">
-        <span className="block font-semibold">{label}</span>
-        {sub && <span className="block text-xs text-muted-foreground">{sub}</span>}
-      </span>
-      <ChevronRight className="size-4 text-muted-foreground" />
-    </>
-  );
-  const cls = "flex items-center gap-3 px-4 py-3";
-  return download ? <a href={href} download className={cls}>{inner}</a> : <Link href={href} className={cls}>{inner}</Link>;
-}
+export const metadata = { title: "Profile" };
 
 export default async function MePage() {
   const user = await requireUser();
@@ -30,44 +15,37 @@ export default async function MePage() {
   const card = toCard(row, null, true);
 
   return (
-    <main className="flex flex-col gap-6 px-5 pt-5 pb-8">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-4xl font-extrabold">Me</h1>
-        <Link href="/app/me/edit" className="flex items-center gap-1.5 rounded-full border-2 border-ink bg-butter px-3 py-1.5 text-sm font-semibold shadow-[2px_2px_0_0_var(--ink)]">
-          <Pencil className="size-3.5" /> Edit
-        </Link>
-      </div>
+    <main className="flex flex-col gap-8 pb-10">
+      <LargeTitle>Profile</LargeTitle>
 
-      <StatusSwitch value={row.profile.lookingStatus} />
+      <ProfileHeader card={card} />
 
-      <section>
-        <h2 className="mb-2 text-xs font-bold tracking-widest text-muted-foreground uppercase">How others see you</h2>
-        <div className="rotate-[-1deg]">
-          <ProfileCard c={card} showScore={false} className="shadow-[5px_5px_0_0_var(--ink)]" />
-        </div>
-      </section>
+      <Section header="Visibility" footer={row.profile.lookingStatus === "paused" ? "You're hidden from Discover. Existing chats keep working." : undefined}>
+        <StatusSwitch value={row.profile.lookingStatus} />
+      </Section>
 
-      <section className="ink-card divide-y divide-ink/10 overflow-hidden p-0">
-        <Row href="/app/me/verify" icon={user.studentVerifiedAt ? GraduationCap : BadgeCheck} label="Verification" sub={[user.ageVerifiedAt ? "18+ ✓" : "18+ pending", user.studentVerifiedAt ? `Student ✓ ${user.studentInstitution}` : "Student: not verified"].join(" · ")} />
-        <Row href="/app/safety" icon={Shield} label="Safety centre" sub="Blocked people, your reports" />
-        <Row href="/contact" icon={LifeBuoy} label="Talk to a human" sub="Our team reads every message" />
-        {user.isAdmin && <Row href="/admin" icon={ShieldCheck} label="Moderation" sub="Reports, appeals, contact" />}
-      </section>
+      <Section header="Verification">
+        <Row icon={IdCard} iconBg={user.ageVerifiedAt ? "bg-green" : "bg-orange"} label="Age check" value={user.ageVerifiedAt ? "Verified" : "Required"} href="/app/me/verify" />
+        <Row icon={GraduationCap} iconBg="bg-tint" label="Student" value={user.studentVerifiedAt ? user.studentInstitution : "Not verified"} href="/app/me/verify" />
+      </Section>
 
-      <section className="ink-card divide-y divide-ink/10 overflow-hidden p-0">
-        <Row href="/privacy" icon={FileText} label="What data we keep" sub="And what we do with it" />
-        <Row href="/api/me/export" icon={Download} label="Export my data" sub="Profile, swipes, matches & messages (JSON)" download />
-      </section>
+      <Section header="Help & safety">
+        <Row icon={ShieldHalf} iconBg="bg-label-2" label="Safety centre" href="/app/safety" />
+        <Row icon={LifeBuoy} iconBg="bg-tint" label="Contact us" href="/contact" />
+        {user.isAdmin && <Row icon={ShieldCheck} iconBg="bg-label" label="Moderation" href="/admin" />}
+      </Section>
 
-      <div className="flex flex-col gap-2">
+      <Section header="Your data" footer={`Signed in as ${user.email}. Only you can see this.`}>
+        <Row icon={FileText} iconBg="bg-label-2" label="What we store and why" href="/privacy" />
+        <Row icon={Download} iconBg="bg-label-2" label="Export my data" href="/api/me/export" download />
+      </Section>
+
+      <Section>
         <form action={logout}>
-          <button className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-ink bg-card py-3 font-semibold">
-            <LogOut className="size-4" /> Log out
-          </button>
+          <button className="flex min-h-11 w-full items-center px-4 text-tint active:bg-fill">Log out</button>
         </form>
         <DeleteAccount />
-      </div>
-      <p className="text-center text-xs text-muted-foreground">Signed in as {user.email}. Only you can see this.</p>
+      </Section>
     </main>
   );
 }
