@@ -12,7 +12,7 @@ export function ContactForm({ channel, defaultEmail }: { channel: "user" | "auth
   if (state?.ok)
     return (
       <div className="flex flex-col items-center gap-2 px-8 pt-10 text-center">
-        <CheckCircle2 className="size-14 text-green" strokeWidth={1.5} />
+        <CheckCircle2 className="size-14 text-positive" strokeWidth={1.5} />
         <p className="text-[22px] font-bold tracking-[-0.02em]">Message sent</p>
         <p className="text-[15px] text-label-2">Someone from our team will reply by e-mail.</p>
       </div>

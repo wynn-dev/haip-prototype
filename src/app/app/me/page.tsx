@@ -25,7 +25,7 @@ export default async function MePage() {
       </Section>
 
       <Section header="Verification">
-        <Row icon={IdCard} iconBg={user.ageVerifiedAt ? "bg-green" : "bg-orange"} label="Age check" value={user.ageVerifiedAt ? "Verified" : "Required"} href="/app/me/verify" />
+        <Row icon={IdCard} iconBg={user.ageVerifiedAt ? "bg-positive" : "bg-caution"} label="Age check" value={user.ageVerifiedAt ? "Verified" : "Required"} href="/app/me/verify" />
         <Row icon={GraduationCap} iconBg="bg-tint" label="Student" value={user.studentVerifiedAt ? user.studentInstitution : "Not verified"} href="/app/me/verify" />
       </Section>
 

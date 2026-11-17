@@ -39,7 +39,7 @@ export function AvatarPicker({ name, value, onChange }: { name: string; value: s
         )}
       </button>
       <button type="button" onClick={() => ref.current?.click()} className="text-[15px] text-tint">
-        {value ? "Change photo" : "Add photo"}
+        {value ? "Change photo" : "Add photo (optional)"}
       </button>
       <input ref={ref} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { void run(Array.from(e.target.files ?? []).slice(0, 1), ([u]) => onChange(u)); e.target.value = ""; }} />
     </div>

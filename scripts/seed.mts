@@ -21,13 +21,23 @@ const int = (a: number, b: number) => a + Math.floor(rnd() * (b - a + 1));
 const BASE = (process.env.R2_PUBLIC_URL ?? "").replace(/\/$/, "");
 const photo = (name: string) => (BASE ? `${BASE}/seed/${name}.jpg` : null);
 const pools = {
-  woman: ["women-00", "women-01", "women-06", "women-08", "women-12", "women-13", "women-16", "women-21", "women-28", "women-29"],
-  man: ["men-00", "men-14", "men-21", "men-28", "men2-05", "men2-08", "men2-10", "men2-13", "men2-23", "men2-29"],
-  rooms: ["rooms-00", "rooms-01", "rooms-03", "rooms-04", "rooms-10", "rooms-22", "rooms-24", "rooms-27", "rooms3-00", "rooms3-09", "rooms3-12", "rooms3-13", "rooms3-15"],
+  woman: ["women-00", "women-01", "women-06", "women-08", "women-12", "women-13", "women-16", "women-21", "women-28", "women-29",
+    "pw-02", "pw-03", "pw-04", "pw-06", "pw-10", "pw-12", "pw-15", "pw-18", "pw-20", "pw-33", "pw-35", "pw-36", "pw-37"],
+  man: ["men-00", "men-14", "men-21", "men-28", "men2-05", "men2-08", "men2-10", "men2-13", "men2-23", "men2-29",
+    "pm-01", "pm-07", "pm-13", "pm-14", "pm-15", "pm-16", "pm-20", "pm-27", "pm-34", "pm-42", "pm-46"],
+  rooms: ["rooms-00", "rooms-01", "rooms-03", "rooms-04", "rooms-10", "rooms-22", "rooms-24", "rooms-27", "rooms3-00", "rooms3-09", "rooms3-12", "rooms3-13", "rooms3-15",
+    "pr-00", "pr-01", "pr-02", "pr-03", "pr-04", "pr-09", "pr-10", "pr-12", "pr-16", "pr-17", "pr-18", "pr-19", "pr-20", "pr-28", "pr-31", "pr-37", "pr-39", "pr-41", "pr-43", "pr-44", "pr-45", "pr-46"],
 };
 const cursor = { woman: 0, man: 0, rooms: 0 };
-const nextFrom = (k: keyof typeof pools) => pools[k][cursor[k]++ % pools[k].length];
-const portraitFor = (g: string) => photo(nextFrom(g === "man" ? "man" : g === "woman" ? "woman" : rnd() < 0.5 ? "woman" : "man"));
+/** Faces are never reused: once a pool runs out, people simply have no photo (it's optional). */
+const portraitFor = (g: string) => {
+  const k = g === "man" ? "man" : g === "woman" ? "woman" : rnd() < 0.5 ? "woman" : "man";
+  if (rnd() < 0.35 || cursor[k] >= pools[k].length) return null;
+  return photo(pools[k][cursor[k]++]);
+};
+/** Room photos may repeat across listings, but never within one. */
+const roomPhotos = (n: number) =>
+  Array.from({ length: n }, () => photo(pools.rooms[cursor.rooms++ % pools.rooms.length])).filter((x): x is string => !!x);
 
 const dob = (age: number) => {
   const d = new Date();
@@ -71,11 +81,21 @@ const HOODS: Record<string, string[]> = {
   Eindhoven: ["Strijp-S", "Woensel", "Stratum"],
 };
 const STREETS = ["Kanaalstraat", "Prinsengracht", "Oudegracht", "Nieuwe Binnenweg", "Haarlemmerstraat", "Herestraat", "Molenstraat", "Lange Nieuwstraat"];
-const NAMES_W = ["lotte", "emma.v", "priya", "chiara", "zeynep", "ana.s", "julia_k", "fenna", "mei", "sofia.r", "noor", "ines"];
-const NAMES_M = ["bram", "luca", "mateo", "jonas.h", "arjun", "tomasz", "youssef", "finn", "kenji", "pieter", "nikos", "oscar"];
-const NAMES_X = ["robin", "sam.q", "alex"];
+const NAMES_W = ["lotte", "emma.v", "priya", "chiara", "zeynep", "ana.s", "julia_k", "fenna", "mei", "sofia.r", "noor", "ines",
+  "anouk", "isa", "maria.l", "giulia", "hanna", "laura.m", "elif", "yara", "sara.b", "lea", "olivia", "amira", "chloe", "nadia",
+  "femke", "roos", "eva.d", "lina", "aisha", "camille", "zofia", "marta", "ingrid", "keiko", "valentina", "tess", "jade", "freya"];
+const NAMES_M = ["bram", "luca", "mateo", "jonas.h", "arjun", "tomasz", "youssef", "finn", "kenji", "pieter", "nikos", "oscar",
+  "thijs", "sem", "daniel.r", "marco", "leon", "ahmed", "rohan", "felix", "jakub", "sven", "diego", "omar", "jesse", "milan",
+  "ruben", "noah.k", "lars", "elias", "kofi", "matteo", "hugo", "ali", "stefan", "wei", "tobias", "joris", "andrei", "mehmet"];
+const NAMES_X = ["robin", "sam.q", "alex", "kai", "charlie", "noa", "jamie", "river", "quinn", "ash"];
 const LANG_EXTRA = ["Dutch", "German", "Spanish", "Italian", "Polish", "Turkish", "Hindi", "Mandarin", "Greek", "Portuguese", "French", "Arabic"];
 const BIOS = [
+  "Second-year law student. Morning runner, evening cook, weekend museum person.",
+  "Starting a master's in AI. Quiet during the week, happy to host a games night.",
+  "Nurse in training, so my hours are odd, but I'm very tidy and very quiet.",
+  "Erasmus student for one year. Looking for friendly people, not a party house.",
+  "Architecture student. Expect cardboard models on the kitchen table, but only briefly.",
+  "Working my first job after graduating. Into cycling, board games and good bread.",
   "MSc student, mostly found at the library or the climbing gym. I cook big batches and share.",
   "Exchange semester! Looking for a calm place and people to explore the city with.",
   "Design student. I own too many plants and one very good coffee machine.",
@@ -85,7 +105,7 @@ const BIOS = [
   "Musician (headphones, I promise). Love a shared Sunday dinner.",
   "Medicine student with weird shifts. Respectful of quiet hours.",
 ];
-const TITLES = ["Sunny room by the canal", "Big room in a chill student house", "Attic room with skylight", "Room in a cosy 3-person flat", "Bright room, 5 min to campus", "Quiet room near the park"];
+const TITLES = ["Furnished room with big windows", "Room in a shared canal-side flat", "Corner room with balcony", "Room in a quiet family-run house", "Spacious room, shared garden", "Sunny room by the canal", "Big room in a chill student house", "Attic room with skylight", "Room in a cosy 3-person flat", "Bright room, 5 min to campus", "Quiet room near the park"];
 const FEATS = ["shared_kitchen", "shared_bathroom", "private_bathroom", "furnished", "balcony", "garden", "washing_machine", "bike_storage", "registration", "bills_included", "pets_allowed"];
 
 const usedNames = new Set<string>(["sanne", "daan", "mod.team", "quick.deal"]);
@@ -95,7 +115,8 @@ function randomPerson(i: number): Spec {
   while (usedNames.has(name)) name = `${name.replace(/\d+$/, "")}${int(2, 99)}`;
   usedNames.add(name);
   const role = rnd() < 0.45 ? "renter" : "tenant";
-  const city = pick(CITIES.slice(0, 5));
+  // weighted towards the big student cities
+  const city = pick(["Amsterdam", "Amsterdam", "Amsterdam", "Utrecht", "Utrecht", "Utrecht", "Rotterdam", "Rotterdam", "Den Haag", "Leiden", "Leiden", "Delft", "Groningen", "Eindhoven"]);
   const age = int(19, 29);
   const smokes = rnd() < 0.12;
   const pets = rnd() < 0.15 ? [pick(["cat", "dog"])] : [];
@@ -103,7 +124,7 @@ function randomPerson(i: number): Spec {
     email: `${name.replace(/[^a-z0-9]/g, "")}${i}@demo.test`,
     role,
     age,
-    student: rnd() < 0.7 ? pick(["Universiteit van Amsterdam", "Universiteit Utrecht", "TU Delft", "Universiteit Leiden", "Erasmus Universiteit Rotterdam", "Hogeschool van Amsterdam"]) : undefined,
+    student: rnd() < 0.7 ? pick(["Universiteit van Amsterdam", "Vrije Universiteit Amsterdam", "Universiteit Utrecht", "TU Delft", "Universiteit Leiden", "Erasmus Universiteit Rotterdam", "Hogeschool van Amsterdam", "Rijksuniversiteit Groningen", "TU Eindhoven", "Hogeschool Utrecht"]) : undefined,
     profile: {
       username: name,
       gender: g,
@@ -143,7 +164,7 @@ function randomPerson(i: number): Spec {
       roomsAvailable: 1,
       householdSize: int(2, 5),
       features: some(FEATS, int(3, 6)).concat(smokes ? ["smoking_allowed"] : []),
-      photos: [photo(nextFrom("rooms")), photo(nextFrom("rooms"))].filter((x): x is string => !!x),
+      photos: roomPhotos(int(1, 3)),
     };
   }
   return spec;
@@ -223,7 +244,8 @@ const hero: Spec[] = [
   },
 ];
 
-const specs = [...hero, ...Array.from({ length: 34 }, (_, i) => randomPerson(i))];
+const COUNT = Number(process.env.SEED_COUNT ?? 134); // 34 originals + 100 extra test profiles
+const specs = [...hero, ...Array.from({ length: COUNT }, (_, i) => randomPerson(i))];
 const ids: Record<string, string> = {};
 
 for (const s of specs) {

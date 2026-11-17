@@ -23,7 +23,7 @@ export function VerifySection({ state }: { state: VerifyState }) {
         footer={state.ageVerified ? undefined : "A date of birth is easy to fake. A trusted provider confirms you're 18+, and we only keep the yes/no result. Prototype: both options are simulated."}
       >
         {state.ageVerified ? (
-          <Row icon={IdCard} iconBg="bg-green" label="Age verified" value={<Check className="size-5 text-green" strokeWidth={3} />} />
+          <Row icon={IdCard} iconBg="bg-positive" label="Age verified" value={<Check className="size-5 text-positive" strokeWidth={3} />} />
         ) : (
           <>
             <Row icon={Landmark} iconBg="bg-tint" label="Verify with your bank (iDIN)" chevron onClick={() => start(async () => { await verifyAge("idin"); toast.success("Age verified"); })} />
@@ -34,7 +34,7 @@ export function VerifySection({ state }: { state: VerifyState }) {
 
       <Section header="Student check · optional" footer={state.studentInstitution ? undefined : "Adds a verified-student badge to your profile. We never show your e-mail address."}>
         {state.studentInstitution ? (
-          <Row icon={GraduationCap} iconBg="bg-tint" label="Verified student" detail={state.studentInstitution} value={<Check className="size-5 text-green" strokeWidth={3} />} />
+          <Row icon={GraduationCap} iconBg="bg-tint" label="Verified student" detail={state.studentInstitution} value={<Check className="size-5 text-positive" strokeWidth={3} />} />
         ) : !sent ? (
           <form
             className="flex items-center pr-2"

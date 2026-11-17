@@ -55,8 +55,11 @@ function DrawerTrigger({ ...props }: DrawerPrimitive.Trigger.Props) {
   return <DrawerPrimitive.Trigger data-slot="drawer-trigger" {...props} />
 }
 
-function DrawerPortal({ ...props }: DrawerPrimitive.Portal.Props) {
-  return <DrawerPrimitive.Portal data-slot="drawer-portal" {...props} />
+// Portal into the phone screen (#screen) so overlays stay inside the device frame on desktop.
+const screenEl = () => (typeof document === "undefined" ? undefined : (document.getElementById("screen") ?? undefined))
+
+function DrawerPortal({ container, ...props }: DrawerPrimitive.Portal.Props) {
+  return <DrawerPrimitive.Portal data-slot="drawer-portal" container={container ?? screenEl()} {...props} />
 }
 
 function DrawerClose({ ...props }: DrawerPrimitive.Close.Props) {

@@ -129,8 +129,8 @@ export function scoreMatch(me: Person, other: Person): MatchResult {
   const sleepScore =
     me.sleep === other.sleep ? 1 : me.sleep === "flexible" || other.sleep === "flexible" ? 0.6 : 0;
   add(20, sleepScore);
-  if (me.sleep === other.sleep && me.sleep === "night") reasons.push("Both night owls 🦉");
-  else if (me.sleep === other.sleep && me.sleep === "early") reasons.push("Both early birds 🌅");
+  if (me.sleep === other.sleep && me.sleep === "night") reasons.push("Both night owls");
+  else if (me.sleep === other.sleep && me.sleep === "early") reasons.push("Both early birds");
   else if (sleepScore === 0) warnings.push("Opposite sleep schedules");
 
   // guests / social

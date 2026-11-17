@@ -84,8 +84,7 @@ export function ProfileCard({ c, showScore = true, fill, className }: { c: CardD
     <article className={cn("relative overflow-hidden rounded-[28px] bg-surface", className)}>
       <Photos c={c} fill={fill} />
       {showScore && (
-        <span className="absolute top-5 right-4 inline-flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 text-[13px] font-semibold text-white backdrop-blur-md">
-          <span className={cn("size-2 rounded-full", c.score >= 75 ? "bg-[#30d158]" : c.score >= 55 ? "bg-[#ffd60a]" : "bg-white/60")} />
+        <span className="absolute top-5 right-4 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-[13px] font-semibold text-white backdrop-blur-md">
           {c.score}% match
         </span>
       )}
@@ -99,13 +98,13 @@ export function ProfileCard({ c, showScore = true, fill, className }: { c: CardD
           <ul className="flex flex-col gap-2.5 px-1">
             {c.reasons.map((r) => (
               <li key={r} className="flex items-center gap-3 text-[15px]">
-                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-green text-white"><Check className="size-3" strokeWidth={3.5} /></span>
+                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-positive text-white"><Check className="size-3" strokeWidth={3.5} /></span>
                 {r}
               </li>
             ))}
             {c.warnings.map((w) => (
               <li key={w} className="flex items-center gap-3 text-[15px] text-label-2">
-                <TriangleAlert className="size-5 shrink-0 text-orange" strokeWidth={2} />
+                <TriangleAlert className="size-5 shrink-0 text-caution" strokeWidth={2} />
                 {w}
               </li>
             ))}

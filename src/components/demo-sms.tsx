@@ -6,7 +6,7 @@ import { MessageCircle } from "lucide-react";
 export function DemoSms({ code, from = "Messages" }: { code: string; from?: string }) {
   return (
     <div className="animate-in slide-in-from-top-6 fade-in flex items-start gap-3 rounded-[22px] bg-surface/90 p-3.5 shadow-[0_8px_30px_rgb(0_0_0/0.12)] backdrop-blur-xl duration-500">
-      <span className="grid size-9 shrink-0 place-items-center rounded-[9px] bg-green text-white">
+      <span className="grid size-9 shrink-0 place-items-center rounded-[9px] bg-positive text-white">
         <MessageCircle className="size-5 fill-white" strokeWidth={0} />
       </span>
       <div className="min-w-0 flex-1 text-[15px] leading-snug">

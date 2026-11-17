@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { getConversations } from "@/lib/conversations";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "Matches" };
+export const metadata = { title: "Chats" };
 
 const ago = (d: Date) => {
   const date = new Date(d);
@@ -27,7 +27,7 @@ export default async function MatchesPage() {
 
   return (
     <main className="flex flex-1 flex-col bg-surface">
-      <LargeTitle>Matches</LargeTitle>
+      <LargeTitle>Chats</LargeTitle>
 
       {convos.length === 0 && (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-10 pb-20 text-center">

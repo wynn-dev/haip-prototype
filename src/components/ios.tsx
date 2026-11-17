@@ -62,7 +62,7 @@ export function Row({ icon: Icon, iconBg, label, detail, value, href, download, 
         </span>
       )}
       <span className={cn("min-w-0", value != null ? "shrink-0" : "flex-1")}>
-        <span className={cn("block truncate", destructive && "text-red", tint && "text-tint")}>{label}</span>
+        <span className={cn("block truncate", destructive && "text-danger", tint && "text-tint")}>{label}</span>
         {detail && <span className="block truncate text-[13px] text-label-2">{detail}</span>}
       </span>
       {value != null && <span className="min-w-0 flex-1 truncate text-right text-label-2">{value}</span>}

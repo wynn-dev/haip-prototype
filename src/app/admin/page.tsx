@@ -58,8 +58,8 @@ export default async function AdminPage() {
               </div>
               {(q.trusted || q.pileOn > 1) && (
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  {q.trusted && <span className="tag bg-green/15 text-green">Trusted reporter · {q.reporterStats!.upheld}/{q.reporterStats!.resolved} upheld</span>}
-                  {q.pileOn > 1 && <span className="tag bg-orange/15 text-orange">{q.pileOn} open reports</span>}
+                  {q.trusted && <span className="tag bg-positive/15 text-positive">Trusted reporter · {q.reporterStats!.upheld}/{q.reporterStats!.resolved} upheld</span>}
+                  {q.pileOn > 1 && <span className="tag bg-caution/15 text-caution">{q.pileOn} open reports</span>}
                 </div>
               )}
               {q.r.details && <p className="mt-3 rounded-[10px] bg-fill px-3 py-2 text-[15px]">{q.r.details}</p>}
@@ -76,7 +76,7 @@ export default async function AdminPage() {
           {appeals.map(({ a, email, reason, username }) => (
             <Card key={a.id}>
               <p className="font-semibold">{username ?? email}</p>
-              <p className="text-[13px] text-red">Removed: {reason}</p>
+              <p className="text-[13px] text-danger">Removed: {reason}</p>
               <p className="mt-3 rounded-[10px] bg-fill px-3 py-2 text-[15px]">{a.message}</p>
               <AppealActions id={a.id} />
             </Card>
