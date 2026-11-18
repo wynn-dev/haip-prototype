@@ -58,21 +58,23 @@ function petsInHome(p: Person) {
   return p.pets.length > 0;
 }
 
-/** Would `a` refuse to live with `b`? (one direction) */
-function vetoes(a: Person, b: Person): boolean {
-  if (a.prefGenders.length > 0 && !a.prefGenders.includes(b.gender)) return true;
-  if (b.age < a.prefAgeMin || b.age > a.prefAgeMax) return true;
+export type Exclusion = "age" | "gender" | "dealbreakers" | "allergies" | "budget" | "city" | "their-preferences";
 
-  if (a.dealbreakers.includes("smoker") && smokesInHome(b)) return true;
-  if (a.dealbreakers.includes("pets") && petsInHome(b)) return true;
-  if (a.dealbreakers.includes("parties") && b.guests === "often") return true;
-  if (a.dealbreakers.includes("messy") && b.cleanliness <= 1) return true;
-  if (a.dealbreakers.includes("night") && b.sleep === "night") return true;
+/** Why would `a` refuse to live with `b`? (one direction; null = no veto) */
+function veto(a: Person, b: Person): Exclusion | null {
+  if (a.prefGenders.length > 0 && !a.prefGenders.includes(b.gender)) return "gender";
+  if (b.age < a.prefAgeMin || b.age > a.prefAgeMax) return "age";
 
-  if (a.allergies.includes("cats") && b.pets.includes("cat")) return true;
-  if (a.allergies.includes("dogs") && b.pets.includes("dog")) return true;
-  if (a.allergies.includes("smoke") && smokesInHome(b)) return true;
-  return false;
+  if (a.dealbreakers.includes("smoker") && smokesInHome(b)) return "dealbreakers";
+  if (a.dealbreakers.includes("pets") && petsInHome(b)) return "dealbreakers";
+  if (a.dealbreakers.includes("parties") && b.guests === "often") return "dealbreakers";
+  if (a.dealbreakers.includes("messy") && b.cleanliness <= 1) return "dealbreakers";
+  if (a.dealbreakers.includes("night") && b.sleep === "night") return "dealbreakers";
+
+  if (a.allergies.includes("cats") && b.pets.includes("cat")) return "allergies";
+  if (a.allergies.includes("dogs") && b.pets.includes("dog")) return "allergies";
+  if (a.allergies.includes("smoke") && smokesInHome(b)) return "allergies";
+  return null;
 }
 
 export function interactionKind(a: Person, b: Person) {
@@ -81,24 +83,34 @@ export function interactionKind(a: Person, b: Person) {
   return "renter_tenant" as const;
 }
 
-export function passesHardFilters(me: Person, other: Person): boolean {
-  if (me.userId === other.userId) return false;
+/**
+ * The first hard filter that rules `other` out for `me`, or null if they're a
+ * candidate. Checked in the order users can act on: location and budget first,
+ * then my preferences, then theirs.
+ */
+export function exclusionReason(me: Person, other: Person): Exclusion | "n/a" | null {
+  if (me.userId === other.userId) return "n/a";
   const kind = interactionKind(me, other);
-  if (!kind) return false;
-  if (vetoes(me, other) || vetoes(other, me)) return false;
+  if (!kind) return "n/a";
 
   if (kind === "renter_tenant") {
     const renter = me.role === "renter" ? me : other;
     const tenant = me.role === "renter" ? other : me;
-    if (!renter.listing) return false;
-    if (tenant.maxRent != null && renter.listing.rent > tenant.maxRent * RENT_TOLERANCE) return false;
-    if (tenant.areas.length > 0 && !tenant.areas.includes(renter.listing.city)) return false;
-  } else {
+    if (!renter.listing) return "n/a";
+    if (tenant.areas.length > 0 && !tenant.areas.includes(renter.listing.city)) return "city";
+    if (tenant.maxRent != null && renter.listing.rent > tenant.maxRent * RENT_TOLERANCE) return "budget";
+  } else if (me.areas.length && other.areas.length && !me.areas.some((a) => other.areas.includes(a))) {
     // two tenants should be hunting in at least one shared city
-    if (me.areas.length && other.areas.length && !me.areas.some((a) => other.areas.includes(a)))
-      return false;
+    return "city";
   }
-  return true;
+  const mine = veto(me, other);
+  if (mine) return mine;
+  if (veto(other, me)) return "their-preferences";
+  return null;
+}
+
+export function passesHardFilters(me: Person, other: Person): boolean {
+  return exclusionReason(me, other) === null;
 }
 
 const rangeOverlap = (a1: number, a2: number, b1: number, b2: number) =>

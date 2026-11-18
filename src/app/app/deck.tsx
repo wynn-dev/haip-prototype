@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Heart, Inbox, MoreHorizontal, X } from "lucide-react";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "motion/react";
 import { toast } from "sonner";
-import { swipe } from "@/app/actions/swipe";
+import { loadMoreCards, swipe } from "@/app/actions/swipe";
 import { PersonAvatar } from "@/components/person-avatar";
 import { ProfileCard } from "@/components/profile-card";
 import { SafetyDrawer } from "@/components/report-sheet";
@@ -75,14 +75,26 @@ function SwipeCard({
   );
 }
 
+export type EmptyHint = { label: string; count: number };
+
 export function Deck({
   initial,
+  total,
+  seen,
+  hints,
   me,
 }: {
   initial: CardData[];
+  /** everyone who passes the filters and hasn't been swiped */
+  total: number;
+  seen: number;
+  hints: EmptyHint[];
   me: { username: string; photoUrl: string | null };
 }) {
   const [cards, setCards] = useState(initial);
+  const [left, setLeft] = useState(total);
+  const handled = useRef(new Set<string>());
+  const loading = useRef(false);
   const [forced, setForced] = useState<"like" | "pass" | null>(null);
   const [match, setMatch] = useState<{ id: string; card: CardData } | null>(null);
   const [safety, setSafety] = useState(false);
@@ -93,6 +105,8 @@ export function Deck({
     const card = cards[0];
     if (!card) return;
     setForced(null);
+    handled.current.add(card.userId);
+    setLeft((n) => Math.max(0, n - 1));
     setCards((c) => c.slice(1));
     start(async () => {
       const r = await swipe(card.userId, d);
@@ -100,6 +114,15 @@ export function Deck({
       if (r.matchId) setMatch({ id: r.matchId, card });
     });
   };
+
+  // fetch the next page before the deck runs dry
+  useEffect(() => {
+    if (cards.length > 5 || left <= cards.length || loading.current) return;
+    loading.current = true;
+    loadMoreCards([...handled.current, ...cards.map((c) => c.userId)])
+      .then((more) => setCards((cur) => [...cur, ...more.filter((m) => !handled.current.has(m.userId) && !cur.some((c) => c.userId === m.userId))]))
+      .finally(() => { loading.current = false; });
+  }, [cards, left]);
 
   const press = (d: "like" | "pass") => {
     if (!top || forced) return;
@@ -109,12 +132,12 @@ export function Deck({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <p className="px-4 pb-3 text-[15px] text-label-2">
-        {cards.length > 0 ? `${cards.length} ${cards.length === 1 ? "person matches" : "people match"} your filters` : "Nobody new right now"}
+        {left > 0 ? `${left} ${left === 1 ? "person matches" : "people match"} your filters` : "No one left to show"}
       </p>
 
       <div className="relative mx-3 min-h-0 flex-1">
         {cards.length === 0 ? (
-          <EmptyDeck />
+          <EmptyDeck hints={hints} seen={seen + (total - left)} />
         ) : (
           <>
             {cards[1] && (
@@ -129,7 +152,7 @@ export function Deck({
         )}
       </div>
 
-      <div className="flex shrink-0 items-center justify-center gap-8 py-4">
+      <div className={cn("flex shrink-0 items-center justify-center gap-8 py-4", !top && "invisible")}>
         <button
           onClick={() => press("pass")}
           disabled={!top}
@@ -181,15 +204,30 @@ export function Deck({
   );
 }
 
-function EmptyDeck() {
+/** Explains *why* the deck is empty, so the user knows which filter to loosen. */
+function EmptyDeck({ hints, seen }: { hints: EmptyHint[]; seen: number }) {
+  const blocked = hints.reduce((n, h) => n + h.count, 0);
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 rounded-[28px] bg-surface p-8 text-center">
-      <span className="grid size-16 place-items-center rounded-full bg-fill">
+    <div className="flex h-full flex-col items-center justify-center gap-3 overflow-y-auto rounded-[28px] bg-surface p-7 text-center">
+      <span className="grid size-16 shrink-0 place-items-center rounded-full bg-fill">
         <Inbox className="size-8 text-label-2" strokeWidth={1.5} />
       </span>
-      <h2 className="mt-2 text-[22px] font-bold tracking-[-0.02em]">You&apos;re all caught up</h2>
-      <p className="text-[15px] text-label-2">New people join every day. A wider budget, more cities or a bigger age range will show you more.</p>
-      <Link href="/app/me/edit" className={cn(buttonVariants({ variant: "tinted", size: "xl" }), "mt-3")}>Adjust preferences</Link>
+      <h2 className="mt-1 text-[22px] font-bold tracking-[-0.02em]">{seen > 0 ? "You've seen everyone" : "No matches for your filters"}</h2>
+      <p className="text-[15px] text-label-2">
+        {seen > 0 ? `You've already swiped on ${seen} ${seen === 1 ? "person" : "people"} who match. ` : ""}
+        {blocked > 0 ? `${blocked} more ${blocked === 1 ? "person is" : "people are"} hidden by your filters:` : "New people join every day."}
+      </p>
+      {hints.length > 0 && (
+        <ul className="w-full overflow-hidden rounded-xl bg-bg text-left text-[15px]">
+          {hints.slice(0, 4).map((h) => (
+            <li key={h.label} className="flex items-center justify-between gap-3 px-4 py-2.5 not-last:border-b-[0.5px] not-last:border-separator">
+              <span>{h.label}</span>
+              <span className="shrink-0 text-label-2 tabular-nums">{h.count}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link href="/app/me/edit" className={cn(buttonVariants({ variant: "filled", size: "xl" }), "mt-2 w-full")}>Adjust filters</Link>
     </div>
   );
 }
