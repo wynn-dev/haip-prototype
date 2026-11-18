@@ -1,8 +1,8 @@
 import "server-only";
-import { and, eq, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, ne, or } from "drizzle-orm";
 import { db, schema } from "@/db";
 import type { Listing, Profile, User } from "@/db/schema";
-import { ageFromDob, interactionKind, passesHardFilters, scoreMatch, type Person } from "@/lib/matching";
+import { ageFromDob, exclusionReason, interactionKind, scoreMatch, type Exclusion, type Person } from "@/lib/matching";
 
 type Row = { user: User; profile: Profile; listing: Listing | null };
 
@@ -131,25 +131,35 @@ export async function blockedIds(userId: string) {
   return new Set(rows.map((b) => (b.blockerId === userId ? b.blockedId : b.blockerId)));
 }
 
+export type DeckStats = {
+  /** people who pass every filter and haven't been swiped yet */
+  total: number;
+  /** people already swiped on */
+  seen: number;
+  /** why the remaining people are hidden, most common first */
+  excluded: { reason: Exclusion; count: number }[];
+};
+
 /**
  * Build the deck: hard-filter every eligible candidate against me, then rank
  * by compatibility score. Swipes are persisted, so already-seen people never
- * come back (and survive logout/device changes).
+ * come back (and survive logout/device changes). `exclude` skips cards the
+ * client already holds, so the deck can page.
  */
-export async function getDeck(user: User, limit = 30): Promise<CardData[]> {
+export async function getDeck(
+  user: User,
+  { limit = 30, exclude = [] }: { limit?: number; exclude?: string[] } = {},
+): Promise<{ cards: CardData[]; stats: DeckStats }> {
+  const empty = { cards: [], stats: { total: 0, seen: 0, excluded: [] } };
   const meRow = await loadRow(user.id);
-  if (!meRow) return [];
+  if (!meRow) return empty;
   const me = toPerson(meRow);
-  if (me.role === "renter" && !meRow.listing) return [];
+  if (me.role === "renter" && !meRow.listing) return empty;
 
-  const swiped = db
-    .select({ id: schema.swipes.targetId })
-    .from(schema.swipes)
-    .where(eq(schema.swipes.swiperId, user.id));
-  const blocked = await blockedIds(user.id);
-
-  const candidates = await baseSelect()
-    .where(
+  const [swipedRows, blocked, candidates] = await Promise.all([
+    db.select({ id: schema.swipes.targetId }).from(schema.swipes).where(eq(schema.swipes.swiperId, user.id)),
+    blockedIds(user.id),
+    baseSelect().where(
       and(
         ne(schema.users.id, user.id),
         eq(schema.users.status, "active"),
@@ -157,17 +167,34 @@ export async function getDeck(user: User, limit = 30): Promise<CardData[]> {
         isNotNull(schema.users.ageVerifiedAt),
         ne(schema.profiles.lookingStatus, "paused"),
         me.role === "renter" ? eq(schema.users.role, "tenant") : undefined,
-        sql`${schema.users.id} not in ${swiped}`,
       ),
-    )
-    .limit(500);
+    ),
+  ]);
+  const swiped = new Set(swipedRows.map((r) => r.id));
+  const skip = new Set(exclude);
 
-  return candidates
-    .filter((r) => !blocked.has(r.user.id))
-    .filter((r) => passesHardFilters(me, toPerson(r)))
+  const counts = new Map<Exclusion, number>();
+  const passing: Row[] = [];
+  let seen = 0;
+  for (const r of candidates) {
+    if (blocked.has(r.user.id)) continue;
+    const why = exclusionReason(me, toPerson(r));
+    if (why === "n/a") continue;
+    if (why) {
+      counts.set(why, (counts.get(why) ?? 0) + 1);
+      continue;
+    }
+    if (swiped.has(r.user.id)) seen++;
+    else passing.push(r);
+  }
+
+  const cards = passing
+    .filter((r) => !skip.has(r.user.id))
     .map((r) => toCard(r, me))
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
+  const excluded = [...counts].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count);
+  return { cards, stats: { total: passing.length, seen, excluded } };
 }
 
 export async function matchesFor(userId: string) {

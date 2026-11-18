@@ -2,6 +2,7 @@
  * Seeds demo data. Only touches accounts ending in @demo.test, so it's safe
  * to re-run. Usage: pnpm db:seed
  */
+import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { like, inArray } from "drizzle-orm";
 import { connect } from "../src/db/connect";
@@ -69,7 +70,11 @@ type Spec = {
   listing?: Omit<typeof schema.listings.$inferInsert, "userId">;
 };
 
-const CITIES = ["Amsterdam", "Utrecht", "Rotterdam", "Den Haag", "Leiden", "Delft", "Groningen", "Eindhoven"];
+const CITY_WEIGHTS = [
+  ...Array(4).fill("Amsterdam"), ...Array(4).fill("Utrecht"), ...Array(3).fill("Rotterdam"), ...Array(2).fill("Den Haag"),
+  ...Array(2).fill("Leiden"), ...Array(2).fill("Delft"), ...Array(2).fill("Groningen"), ...Array(2).fill("Eindhoven"),
+  "Nijmegen", "Maastricht", "Enschede", "Tilburg", "Wageningen",
+] as string[];
 const HOODS: Record<string, string[]> = {
   Amsterdam: ["De Pijp", "Oost", "Jordaan", "West", "Noord", "Bos en Lommer"],
   Utrecht: ["Lombok", "Wittevrouwen", "Oudwijk", "Zuilen", "Binnenstad"],
@@ -79,6 +84,11 @@ const HOODS: Record<string, string[]> = {
   Delft: ["Binnenstad", "Wippolder", "Hof van Delft"],
   Groningen: ["Schildersbuurt", "Oosterpoort", "Zeeheldenbuurt"],
   Eindhoven: ["Strijp-S", "Woensel", "Stratum"],
+  Nijmegen: ["Oost", "Bottendaal", "Hengstdal"],
+  Maastricht: ["Wyck", "Jekerkwartier", "Céramique"],
+  Enschede: ["Roombeek", "Centrum", "Hogeland"],
+  Tilburg: ["Spoorzone", "Oud-Zuid", "Reeshof"],
+  Wageningen: ["Centrum", "Noordwest", "De Nude"],
 };
 const STREETS = ["Kanaalstraat", "Prinsengracht", "Oudegracht", "Nieuwe Binnenweg", "Haarlemmerstraat", "Herestraat", "Molenstraat", "Lange Nieuwstraat"];
 const NAMES_W = ["lotte", "emma.v", "priya", "chiara", "zeynep", "ana.s", "julia_k", "fenna", "mei", "sofia.r", "noor", "ines",
@@ -115,9 +125,13 @@ function randomPerson(i: number): Spec {
   while (usedNames.has(name)) name = `${name.replace(/\d+$/, "")}${int(2, 99)}`;
   usedNames.add(name);
   const role = rnd() < 0.45 ? "renter" : "tenant";
-  // weighted towards the big student cities
-  const city = pick(["Amsterdam", "Amsterdam", "Amsterdam", "Utrecht", "Utrecht", "Utrecht", "Rotterdam", "Rotterdam", "Den Haag", "Leiden", "Leiden", "Delft", "Groningen", "Eindhoven"]);
-  const age = int(19, 29);
+  // weighted towards the big student cities, but every city has people
+  const city = pick(CITY_WEIGHTS);
+  // mostly students, plus young professionals and some older renters/tenants
+  const band = rnd();
+  const age = band < 0.62 ? int(19, 29) : band < 0.86 ? int(30, 44) : int(45, 66);
+  const prefAgeMin = age >= 45 ? int(18, 35) : 18;
+  const prefAgeMax = age >= 30 || rnd() < 0.4 ? 99 : int(30, 45);
   const smokes = rnd() < 0.12;
   const pets = rnd() < 0.15 ? [pick(["cat", "dog"])] : [];
   const spec: Spec = {
@@ -139,16 +153,16 @@ function randomPerson(i: number): Spec {
       allergies: rnd() < 0.15 ? [pick(["cats", "dust", "nuts"])] : [],
       dealbreakers: rnd() < 0.3 ? [pick(["smoker", "parties", "messy"])] : [],
       prefGenders: rnd() < 0.15 ? [g] : [],
-      prefAgeMin: 18,
-      prefAgeMax: int(30, 40),
+      prefAgeMin,
+      prefAgeMax,
       roommatesMin: 1,
       roommatesMax: int(2, 5),
     },
   };
   if (role === "tenant") {
     Object.assign(spec.profile, {
-      maxRent: int(13, 34) * 25,
-      areas: [city, ...(rnd() < 0.5 ? [pick(CITIES)] : [])].filter((v, k, a) => a.indexOf(v) === k),
+      maxRent: int(10, 48) * 25,
+      areas: [city, ...(rnd() < 0.55 ? [pick(CITY_WEIGHTS)] : []), ...(rnd() < 0.2 ? [pick(CITY_WEIGHTS)] : [])].filter((v, k, a) => a.indexOf(v) === k),
       moveInFrom: inMonths(int(0, 3)),
       stayMonths: pick([5, 6, 6, 10, 12, 12, 24]),
     });
@@ -158,7 +172,7 @@ function randomPerson(i: number): Spec {
       city,
       neighbourhood: pick(HOODS[city]),
       address: `${pick(STREETS)} ${int(2, 180)}`,
-      rent: int(18, 36) * 25,
+      rent: int(12, 44) * 25,
       durationMonths: pick([6, 6, 12, 12, 24]),
       availableFrom: inMonths(int(0, 2)),
       roomsAvailable: 1,
@@ -244,14 +258,16 @@ const hero: Spec[] = [
   },
 ];
 
-const COUNT = Number(process.env.SEED_COUNT ?? 134); // 34 originals + 100 extra test profiles
+const COUNT = Number(process.env.SEED_COUNT ?? 534); // generated test profiles (plus the 4 named demo accounts)
 const specs = [...hero, ...Array.from({ length: COUNT }, (_, i) => randomPerson(i))];
 const ids: Record<string, string> = {};
+for (const s of specs) ids[s.email] = randomUUID();
 
-for (const s of specs) {
-  const [u] = await db
-    .insert(schema.users)
-    .values({
+const chunks = <T,>(arr: T[], n = 100) => Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n));
+for (const part of chunks(specs)) {
+  await db.insert(schema.users).values(
+    part.map((s) => ({
+      id: ids[s.email],
       email: s.email,
       phone: `+3161${String(int(1000000, 9999999))}`,
       passwordHash,
@@ -268,11 +284,11 @@ for (const s of specs) {
       removalReason: s.removalReason ?? null,
       removedAt: s.status === "removed" ? new Date(Date.now() - 2 * 864e5) : null,
       onboardedAt: now,
-    })
-    .returning({ id: schema.users.id });
-  ids[s.email] = u.id;
-  await db.insert(schema.profiles).values({ userId: u.id, ...s.profile });
-  if (s.listing) await db.insert(schema.listings).values({ userId: u.id, ...s.listing });
+    })),
+  );
+  await db.insert(schema.profiles).values(part.map((s) => ({ userId: ids[s.email], ...s.profile })));
+  const listings = part.filter((s) => s.listing).map((s) => ({ userId: ids[s.email], ...s.listing! }));
+  if (listings.length) await db.insert(schema.listings).values(listings);
 }
 
 const sanne = ids["sanne@demo.test"];
@@ -280,12 +296,11 @@ const daan = ids["daan@demo.test"];
 const others = specs.slice(4).map((s) => ids[s.email]);
 
 // a bunch of people have already liked Sanne and Daan → swiping right on them = instant match
-for (const id of others.filter(() => rnd() < 0.5)) {
-  await db.insert(schema.swipes).values({ swiperId: id, targetId: sanne, direction: "like" }).onConflictDoNothing();
-}
-for (const id of others.filter(() => rnd() < 0.5)) {
-  await db.insert(schema.swipes).values({ swiperId: id, targetId: daan, direction: "like" }).onConflictDoNothing();
-}
+const preLikes = [
+  ...others.filter(() => rnd() < 0.5).map((id) => ({ swiperId: id, targetId: sanne, direction: "like" as const })),
+  ...others.filter(() => rnd() < 0.5).map((id) => ({ swiperId: id, targetId: daan, direction: "like" as const })),
+];
+for (const part of chunks(preLikes, 200)) await db.insert(schema.swipes).values(part).onConflictDoNothing();
 
 // Sanne ↔ Daan already matched and chatting
 await db.insert(schema.swipes).values([

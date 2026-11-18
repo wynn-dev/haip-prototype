@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { requireUser } from "@/lib/auth";
-import { blockedIds, interactionKind, loadRow, toPerson } from "@/lib/deck";
+import { blockedIds, getDeck, interactionKind, loadRow, toPerson } from "@/lib/deck";
 import { passesHardFilters, scoreMatch } from "@/lib/matching";
 
 export type SwipeResult = { ok: true; matchId: string | null } | { ok: false; error: string };
@@ -48,4 +48,10 @@ export async function swipe(targetId: string, direction: "like" | "pass"): Promi
     }
   }
   return { ok: true, matchId };
+}
+
+/** Next page of the deck, skipping cards the client already holds. */
+export async function loadMoreCards(exclude: string[]) {
+  const user = await requireUser();
+  return (await getDeck(user, { exclude: exclude.slice(0, 500) })).cards;
 }
