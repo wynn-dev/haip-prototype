@@ -1,19 +1,31 @@
 import { z } from "zod";
+import { ALLERGIES, CITIES, DEALBREAKERS, FEATURES, GENDERS, LANGUAGES, PETS } from "@/lib/options";
+
+const values = <T extends readonly ({ value: string } | string)[]>(list: T) =>
+  list.map((o) => (typeof o === "string" ? o : o.value)) as [string, ...string[]];
+/** A list of known option values: no free text, no duplicates, bounded size. */
+const pick = <T extends readonly ({ value: string } | string)[]>(list: T) =>
+  z.array(z.enum(values(list))).max(list.length).transform((a) => [...new Set(a)]);
+const optDate = z.iso.date("Use a valid date").nullable().default(null);
+const url = z.string().max(500);
 
 const int = (min: number, max: number) => z.coerce.number().int().min(min).max(max);
 
 export const listingSchema = z.object({
   title: z.string().trim().min(3, "Give your place a title").max(60),
-  address: z.string().trim().min(5, "Add the street address (only shown to matches)"),
-  city: z.string().min(1, "Pick a city"),
+  city: z.enum(values(CITIES), { error: "Choose a city" }),
+  address: z.string().trim().min(5, "Add the street address (only shown to matches)").max(120),
   neighbourhood: z.string().trim().max(40).default(""),
   rent: int(100, 5000),
   durationMonths: int(1, 60),
-  availableFrom: z.string().nullable().default(null),
+  availableFrom: optDate,
   roomsAvailable: int(1, 6),
   householdSize: int(2, 10),
-  features: z.array(z.string()).default([]),
-  photos: z.array(z.string()).max(6).default([]),
+  features: pick(FEATURES).default([]),
+  photos: z.array(url).max(6, "Up to 6 photos").default([]),
+}).refine((l) => !(l.features.includes("private_bathroom") && l.features.includes("shared_bathroom")), {
+  message: "Choose either a private or a shared bathroom",
+  path: ["features"],
 });
 
 export const profileSchema = z
@@ -25,10 +37,10 @@ export const profileSchema = z
       .min(2, "Username needs 2+ characters")
       .max(20)
       .regex(/^[\p{L}\p{N}_. -]+$/u, "Letters, numbers, spaces, . and _ only"),
-    photoUrl: z.string().nullable().default(null),
+    photoUrl: url.nullable().default(null),
     bio: z.string().trim().max(300).default(""),
     gender: z.enum(["woman", "man", "nonbinary", "other"], { error: "Pick a gender" }),
-    languages: z.array(z.string()).min(1, "Add at least one language"),
+    languages: pick(LANGUAGES).pipe(z.array(z.string()).min(1, "Add at least one language")),
     lookingStatus: z.enum(["looking", "found_house", "paused"]).default("looking"),
     roommatesMin: int(1, 8),
     roommatesMax: int(1, 8),
@@ -36,15 +48,15 @@ export const profileSchema = z
     sleep: z.enum(["early", "flexible", "night"]),
     guests: z.enum(["rarely", "sometimes", "often"]),
     smokes: z.boolean(),
-    pets: z.array(z.string()).default([]),
-    allergies: z.array(z.string()).default([]),
-    dealbreakers: z.array(z.string()).default([]),
-    prefGenders: z.array(z.string()).default([]),
+    pets: pick(PETS).default([]),
+    allergies: pick(ALLERGIES).default([]),
+    dealbreakers: pick(DEALBREAKERS).default([]),
+    prefGenders: pick(GENDERS).default([]),
     prefAgeMin: int(18, 99),
     prefAgeMax: int(18, 99),
     maxRent: z.coerce.number().int().min(100).max(5000).nullable().default(null),
-    areas: z.array(z.string()).default([]),
-    moveInFrom: z.string().nullable().default(null),
+    areas: pick(CITIES).default([]),
+    moveInFrom: optDate,
     stayMonths: z.coerce.number().int().min(1).max(60).nullable().default(null),
     listing: listingSchema.nullable().default(null),
   })

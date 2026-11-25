@@ -16,8 +16,8 @@ export default async function ContactPage({ searchParams }: PageProps<"/contact"
       <LargeTitle
         sub={
           authority
-            ? "Police, municipalities and regulators can reach our internal team directly. Requests are prioritised and logged."
-            : "A person on our team reads every message and replies by e-mail, usually within 24 hours."
+            ? "Police, municipalities and regulators can reach our internal team directly. Authority requests are shown first in the team inbox and kept on record."
+            : "A person on our internal team reads every message and replies to the e-mail address you give."
         }
       >
         {authority ? "Authorities" : "Contact us"}

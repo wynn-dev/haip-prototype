@@ -31,6 +31,8 @@ export const users = pgTable("users", {
   status: text("status", { enum: ["active", "removed"] }).notNull().default("active"),
   removalReason: text("removal_reason"),
   removedAt: timestamp("removed_at", { withTimezone: true }),
+  /** bumped on logout/removal/password change: invalidates every existing session token */
+  sessionVersion: integer("session_version").notNull().default(0),
   onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -46,6 +48,20 @@ export const otpCodes = pgTable("otp_codes", {
   target: text("target").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  /** wrong guesses; the code is burned after MAX_OTP_ATTEMPTS */
+  attempts: integer("attempts").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Removed accounts can't come back by deleting and re-registering:
+ * we keep only salted hashes of their e-mail and phone, never the plain values.
+ */
+export const bannedIdentities = pgTable("banned_identities", {
+  id: serial("id").primaryKey(),
+  emailHash: text("email_hash").notNull().unique(),
+  phoneHash: text("phone_hash").notNull(),
+  reason: text("reason").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -134,16 +150,16 @@ export const matches = pgTable(
   "matches",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    // userA < userB lexicographically, so a pair is stored once
-    userA: uuid("user_a")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    userB: uuid("user_b")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    // userA < userB lexicographically, so a pair is stored once.
+    // A deleted account becomes null, so the other person keeps the conversation.
+    userA: uuid("user_a").references(() => users.id, { onDelete: "set null" }),
+    userB: uuid("user_b").references(() => users.id, { onDelete: "set null" }),
     kind: text("kind", { enum: ["renter_tenant", "tenant_tenant"] }).notNull(),
     score: integer("score"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** set on unmatch/block/report: the chat closes, but messages are kept as evidence */
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    endedReason: text("ended_reason", { enum: ["unmatched", "blocked", "reported", "removed"] }),
   },
   (t) => [uniqueIndex("matches_pair_idx").on(t.userA, t.userB)],
 );
@@ -155,9 +171,7 @@ export const messages = pgTable(
     matchId: uuid("match_id")
       .notNull()
       .references(() => matches.id, { onDelete: "cascade" }),
-    senderId: uuid("sender_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    senderId: uuid("sender_id").references(() => users.id, { onDelete: "set null" }),
     body: text("body").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -184,14 +198,15 @@ export const reports = pgTable("reports", {
   id: serial("id").primaryKey(),
   // reporter is kept (set null) after their deletion so moderation history survives
   reporterId: uuid("reporter_id").references(() => users.id, { onDelete: "set null" }),
-  reportedId: uuid("reported_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+  // kept (set null) when the reported person deletes their account, so reports can't be escaped
+  reportedId: uuid("reported_id").references(() => users.id, { onDelete: "set null" }),
+  reportedUsername: text("reported_username"),
   reason: text("reason", {
     enum: ["fake", "scam", "harassment", "discrimination", "inappropriate", "underage", "other"],
   }).notNull(),
   details: text("details").notNull().default(""),
-  status: text("status", { enum: ["open", "upheld", "dismissed"] }).notNull().default("open"),
+  // overturned = was upheld, but the removal was reversed on appeal
+  status: text("status", { enum: ["open", "upheld", "dismissed", "overturned"] }).notNull().default("open"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
 });

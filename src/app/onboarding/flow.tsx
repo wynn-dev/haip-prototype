@@ -39,12 +39,12 @@ export function OnboardingFlow({ initial, verify }: { initial: ProfileInput; ver
   const steps: Step[] = [
     { key: "role", title: "What brings you here?", sub: "You can change this later.", Comp: RoleSection, check: (p) => (p.role ? null : "Choose one to continue") },
     { key: "about", title: "Your profile", sub: "This is what other people see.", Comp: AboutSection, check: (p) => (p.username.trim().length < 2 ? "Add a username" : !p.gender ? "Choose a gender" : !p.languages.length ? "Add a language" : null) },
-    { key: "life", title: "How you live", sub: "Used to rank who you see first.", Comp: LifestyleSection },
-    { key: "mates", title: "Who you'd live with", sub: "Filters work both ways.", Comp: HousematesSection },
+    { key: "life", title: "How you live", sub: "Smoking, pets and allergies can rule people out; the rest ranks who you see first.", Comp: LifestyleSection },
+    { key: "mates", title: "Who you'd live with", sub: "These filter who you see, and who sees you.", Comp: HousematesSection },
     p.role === "renter"
-      ? { key: "place", title: "Your place", sub: "Shown on your card to people looking for a room.", Comp: ListingSection, check: (p) => { const l = p.listing; return !l?.title ? "Add a title" : !l.city ? "Choose a city" : !l.address ? "Add the street address" : null; } }
+      ? { key: "place", title: "Your place", sub: "Shown on your card to people looking for a room.", Comp: ListingSection, check: (p) => { const l = p.listing; return !l?.title ? "Add a title" : !l.city ? "Choose a city" : !l.address ? "Add the street address" : l.features?.includes("private_bathroom") && l.features?.includes("shared_bathroom") ? "Choose either a private or a shared bathroom" : null; } }
       : { key: "hunt", title: "What you're looking for", sub: "Budget, cities and timing.", Comp: TenantHousingSection, check: (p) => (!p.areas?.length ? "Choose at least one city" : null) },
-    { key: "verify", title: "Verification", sub: "Verified people get more matches.", Comp: () => <VerifySection state={verify} /> },
+    { key: "verify", title: "Verification", sub: "The age check is required. The student check adds a badge to your card.", Comp: () => <VerifySection state={verify} /> },
   ];
   const step = steps[i];
   const last = i === steps.length - 1;
@@ -78,7 +78,7 @@ export function OnboardingFlow({ initial, verify }: { initial: ProfileInput; ver
           <span />
         </div>
         <div className="h-[3px] bg-fill">
-          <div className="h-full bg-tint transition-all duration-500" style={{ width: `${((i + 1) / steps.length) * 100}%` }} />
+          <div className="h-full bg-tint-fill transition-all duration-500" style={{ width: `${((i + 1) / steps.length) * 100}%` }} />
         </div>
       </header>
 

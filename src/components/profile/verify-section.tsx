@@ -20,21 +20,21 @@ export function VerifySection({ state }: { state: VerifyState }) {
     <div className="flex flex-col gap-6">
       <Section
         header="Age check · required"
-        footer={state.ageVerified ? undefined : "A date of birth is easy to fake. A trusted provider confirms you're 18+, and we only keep the yes/no result. Prototype: both options are simulated."}
+        footer={state.ageVerified ? undefined : "A date of birth is easy to fake, so a real app confirms it with a trusted provider (your bank via iDIN, or an ID scan with a selfie) and keeps only the yes/no result. In this prototype both options are simulated: one tap completes the check."}
       >
         {state.ageVerified ? (
-          <Row icon={IdCard} iconBg="bg-positive" label="Age verified" value={<Check className="size-5 text-positive" strokeWidth={3} />} />
+          <Row icon={IdCard} iconBg="bg-tint-fill" label="Age check done (simulated)" value={<Check className="size-5 text-positive" strokeWidth={3} />} />
         ) : (
           <>
-            <Row icon={Landmark} iconBg="bg-tint" label="Verify with your bank (iDIN)" chevron onClick={() => start(async () => { await verifyAge("idin"); toast.success("Age verified"); })} />
-            <Row icon={ScanFace} iconBg="bg-label-2" label="Scan ID and take a selfie" chevron onClick={() => start(async () => { await verifyAge("id_scan"); toast.success("Age verified"); })} />
+            <Row icon={Landmark} iconBg="bg-tint-fill" label="Verify with your bank (iDIN)" chevron onClick={() => start(async () => { const r = await verifyAge("idin"); if (r.error) toast.error(r.error); else toast.success("Age check done (simulated)"); })} />
+            <Row icon={ScanFace} iconBg="bg-tile" label="Scan ID and take a selfie" chevron onClick={() => start(async () => { const r = await verifyAge("id_scan"); if (r.error) toast.error(r.error); else toast.success("Age check done (simulated)"); })} />
           </>
         )}
       </Section>
 
       <Section header="Student check · optional" footer={state.studentInstitution ? undefined : "Adds a verified-student badge to your profile. We never show your e-mail address."}>
         {state.studentInstitution ? (
-          <Row icon={GraduationCap} iconBg="bg-tint" label="Verified student" detail={state.studentInstitution} value={<Check className="size-5 text-positive" strokeWidth={3} />} />
+          <Row icon={GraduationCap} iconBg="bg-tint-fill" label="Verified student" detail={state.studentInstitution} value={<Check className="size-5 text-positive" strokeWidth={3} />} />
         ) : !sent ? (
           <form
             className="flex items-center pr-2"
@@ -69,7 +69,7 @@ export function VerifySection({ state }: { state: VerifyState }) {
       </Section>
       {sent?.code && !state.studentInstitution && (
         <div className="px-4">
-          <DemoSms code={sent.code} from="Mail" />
+          <DemoSms key={sent.code} code={sent.code} channel="email" />
         </div>
       )}
     </div>

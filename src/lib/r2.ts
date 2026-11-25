@@ -1,6 +1,6 @@
 import "server-only";
 import { createHmac } from "node:crypto";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectsCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const {
@@ -47,4 +47,29 @@ export async function presignUpload(key: string, contentType: string) {
     return { uploadUrl: `${worker}/${key}?${qs}`, publicUrl };
   }
   throw new Error("R2 not configured");
+}
+
+/** Remove every photo a user uploaded (avatars + listing photos). Best effort; returns objects deleted. */
+export async function deleteUserMedia(uid: string): Promise<number> {
+  let deleted = 0;
+  for (const kind of ["avatars", "listings"] as const) {
+    const prefix = `${kind}/${uid}/`;
+    if (s3) {
+      let token: string | undefined;
+      do {
+        const page = await s3.send(new ListObjectsV2Command({ Bucket: R2_BUCKET, Prefix: prefix, ContinuationToken: token }));
+        const keys = (page.Contents ?? []).map((o) => ({ Key: o.Key! }));
+        if (keys.length) await s3.send(new DeleteObjectsCommand({ Bucket: R2_BUCKET, Delete: { Objects: keys } }));
+        deleted += keys.length;
+        token = page.IsTruncated ? page.NextContinuationToken : undefined;
+      } while (token);
+    } else if (worker) {
+      const exp = Math.floor(Date.now() / 1000) + 60;
+      const sig = createHmac("sha256", R2_UPLOAD_SECRET!).update(`delete:${prefix}:${exp}`).digest("hex");
+      const res = await fetch(`${worker}/${prefix}?${new URLSearchParams({ exp: String(exp), sig })}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(`media delete failed: ${res.status}`);
+      deleted += ((await res.json()) as { deleted: number }).deleted;
+    }
+  }
+  return deleted;
 }

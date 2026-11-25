@@ -57,7 +57,7 @@ export function Row({ icon: Icon, iconBg, label, detail, value, href, download, 
   const body = (
     <>
       {Icon && (
-        <span className={cn("grid size-[29px] shrink-0 place-items-center rounded-[7px] text-white", iconBg ?? "bg-label-2")}>
+        <span className={cn("grid size-[29px] shrink-0 place-items-center rounded-[7px] text-white", iconBg ?? "bg-tile")}>
           <Icon className="size-[17px]" strokeWidth={2.2} />
         </span>
       )}
@@ -65,7 +65,11 @@ export function Row({ icon: Icon, iconBg, label, detail, value, href, download, 
         <span className={cn("block truncate", destructive && "text-danger", tint && "text-tint")}>{label}</span>
         {detail && <span className="block truncate text-[13px] text-label-2">{detail}</span>}
       </span>
-      {value != null && <span className="min-w-0 flex-1 truncate text-right text-label-2">{value}</span>}
+      {value != null && (
+        <span className="flex min-w-0 flex-1 justify-end text-label-2">
+          <span className="truncate">{value}</span>
+        </span>
+      )}
       {(chevron ?? !!href) && <ChevronRight className="size-[18px] shrink-0 text-label-3" strokeWidth={2.5} />}
     </>
   );
@@ -90,6 +94,17 @@ export function FieldRow({ label, children, className, stacked }: { label?: Reac
       {label && <span className="shrink-0">{label}</span>}
       <span className="flex min-w-0 flex-1 justify-end">{children}</span>
     </label>
+  );
+}
+
+/** iOS settings-style text field: fixed label column on the left, input on the right. */
+export function LabeledInput({ label, id, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+  const inputId = id ?? `f-${props.name ?? label.toLowerCase().replace(/\W+/g, "-")}`;
+  return (
+    <div className="flex min-h-11 items-center">
+      <label htmlFor={inputId} className="w-[7.5rem] shrink-0 pl-4 text-[17px]">{label}</label>
+      <input id={inputId} {...props} className={cn("h-11 min-w-0 flex-1 bg-transparent pr-4 text-[17px] outline-none placeholder:text-label-3", props.className)} />
+    </div>
   );
 }
 

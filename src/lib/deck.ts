@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, inArray, isNotNull, ne, or } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, ne, or } from "drizzle-orm";
 import { db, schema } from "@/db";
 import type { Listing, Profile, User } from "@/db/schema";
 import { ageFromDob, exclusionReason, interactionKind, scoreMatch, type Exclusion, type Person } from "@/lib/matching";
@@ -26,7 +26,6 @@ export type CardData = {
   guests: string;
   smokes: boolean;
   pets: string[];
-  allergies: string[];
   maxRent: number | null;
   areas: string[];
   moveInFrom: string | null;
@@ -107,7 +106,6 @@ export function toCard(row: Row, me: Person | null, revealAddress = false): Card
     guests: profile.guests,
     smokes: profile.smokes,
     pets: profile.pets,
-    allergies: profile.allergies,
     maxRent: profile.maxRent,
     areas: profile.areas,
     moveInFrom: profile.moveInFrom,
@@ -115,6 +113,11 @@ export function toCard(row: Row, me: Person | null, revealAddress = false): Card
     listing: publicListing,
     ...m,
   };
+}
+
+/** Who can appear in someone's deck (and be liked): active, set up, 18+-checked, and still looking. */
+export function isDiscoverable({ user, profile }: Row) {
+  return user.status === "active" && !!user.onboardedAt && !!user.ageVerifiedAt && profile.lookingStatus === "looking";
 }
 
 export async function loadRow(userId: string): Promise<Row | null> {
@@ -165,7 +168,7 @@ export async function getDeck(
         eq(schema.users.status, "active"),
         isNotNull(schema.users.onboardedAt),
         isNotNull(schema.users.ageVerifiedAt),
-        ne(schema.profiles.lookingStatus, "paused"),
+        eq(schema.profiles.lookingStatus, "looking"),
         me.role === "renter" ? eq(schema.users.role, "tenant") : undefined,
       ),
     ),
@@ -197,12 +200,12 @@ export async function getDeck(
   return { cards, stats: { total: passing.length, seen, excluded } };
 }
 
+/** Open (not ended) matches. Ended chats are kept for moderation but hidden from both people. */
 export async function matchesFor(userId: string) {
-  const rows = await db
+  return db
     .select()
     .from(schema.matches)
-    .where(or(eq(schema.matches.userA, userId), eq(schema.matches.userB, userId)));
-  return rows;
+    .where(and(or(eq(schema.matches.userA, userId), eq(schema.matches.userB, userId)), isNull(schema.matches.endedAt)));
 }
 
 export async function rowsFor(ids: string[]) {

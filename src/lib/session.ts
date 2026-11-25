@@ -7,7 +7,8 @@ const secret = new TextEncoder().encode(
   process.env.AUTH_SECRET ?? "dev-only-secret-change-me-dev-only-secret",
 );
 
-export type Session = { uid: string; stage: "2fa" | "full" };
+/** `v` must equal users.session_version, so bumping it revokes every outstanding token. */
+export type Session = { uid: string; stage: "2fa" | "full"; v: number };
 
 export async function setSession(s: Session) {
   const token = await new SignJWT(s)
@@ -29,7 +30,7 @@ export async function getSession(): Promise<Session | null> {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret);
-    return { uid: payload.uid as string, stage: payload.stage as Session["stage"] };
+    return { uid: payload.uid as string, stage: payload.stage as Session["stage"], v: Number(payload.v ?? -1) };
   } catch {
     return null;
   }

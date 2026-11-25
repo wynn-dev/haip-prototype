@@ -39,16 +39,16 @@ export function SafetyDrawer({
         <DrawerHeader className="text-center">
           <DrawerTitle className="text-[17px] font-semibold">{mode === "menu" ? name : `Report ${name}`}</DrawerTitle>
           <DrawerDescription className="text-[13px]">
-            {mode === "menu" ? "They won't know it was you." : "Someone on our team reviews every report. Reporting also blocks them."}
+            {mode === "menu" ? "They won't know it was you." : "A person on our team reviews every report. Reporting also blocks them; your chat is kept so we can read it."}
           </DrawerDescription>
         </DrawerHeader>
         <div className="flex flex-col gap-5 overflow-y-auto pb-8">
           {mode === "menu" ? (
             <Section>
-              <Row icon={Flag} iconBg="bg-danger" label="Report" chevron onClick={() => setMode("report")} />
+              <Row icon={Flag} iconBg="bg-danger-fill" label="Report" chevron onClick={() => setMode("report")} />
               <Row
                 icon={Ban}
-                iconBg="bg-label-2"
+                iconBg="bg-tile"
                 label="Block"
                 onClick={() =>
                   start(async () => {
@@ -79,7 +79,7 @@ export function SafetyDrawer({
                 <Button
                   variant="filled"
                   size="xl"
-                  className="w-full bg-danger text-white"
+                  className="w-full bg-danger-fill text-white"
                   disabled={!reason || pending}
                   onClick={() =>
                     start(async () => {

@@ -11,8 +11,16 @@ import type { ProfileInput } from "@/lib/profile-schema";
 export function EditForm({ initial }: { initial: ProfileInput }) {
   const router = useRouter();
   const [p, setP] = useState(initial);
+  const [dirty, setDirty] = useState(false);
   const [pending, start] = useTransition();
-  const set = (patch: Partial<ProfileInput>) => setP((c) => ({ ...c, ...patch }));
+  const set = (patch: Partial<ProfileInput>) => {
+    setDirty(true);
+    setP((c) => ({ ...c, ...patch }));
+  };
+  const cancel = () => {
+    if (dirty && !window.confirm("Discard your changes?")) return;
+    router.push("/app/me");
+  };
   const sections = [
     ["I am", RoleSection],
     ["Profile", AboutSection],
@@ -24,13 +32,16 @@ export function EditForm({ initial }: { initial: ProfileInput }) {
   return (
     <main className="flex flex-col">
       <NavBar
-        back="/app/me"
-        backLabel="Profile"
-        title="Edit Profile"
+        leading={
+          <button onClick={cancel} className="-my-2 py-2 pr-2 text-tint active:opacity-60">
+            Cancel
+          </button>
+        }
+        title="Edit profile"
         trailing={
           <button
             disabled={pending}
-            className="font-semibold text-tint disabled:opacity-40"
+            className="-my-2 py-2 pl-2 font-semibold text-tint disabled:opacity-40"
             onClick={() =>
               start(async () => {
                 const r = await saveProfile(p);

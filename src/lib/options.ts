@@ -92,8 +92,8 @@ export const FEATURES = [
 
 export const LOOKING_STATUS = [
   { value: "looking", label: "Looking" },
-  { value: "found_house", label: "Found a house" },
-  { value: "paused", label: "Paused" },
+  { value: "found_house", label: "Found a place" },
+  { value: "paused", label: "Hidden" },
 ] as const;
 
 export const REPORT_REASONS = [

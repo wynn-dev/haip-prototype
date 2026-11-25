@@ -46,7 +46,7 @@ export default async function MatchesPage() {
               <Link key={c.matchId} href={`/app/chat/${c.matchId}`} className="flex w-[72px] shrink-0 flex-col items-center gap-1.5 active:opacity-60">
                 <div className="relative">
                   <PersonAvatar name={c.card.username} src={c.card.photoUrl} className="size-[72px] text-3xl" />
-                  <span className="absolute -right-0.5 -bottom-0.5 size-4 rounded-full border-[3px] border-surface bg-tint" />
+                  <span className="absolute -right-0.5 -bottom-0.5 size-4 rounded-full border-[3px] border-surface bg-tint-fill" />
                 </div>
                 <span className="w-full truncate text-center text-[13px]">{c.card.username}</span>
               </Link>
@@ -63,14 +63,14 @@ export default async function MatchesPage() {
               <li key={c.matchId}>
                 <Link href={`/app/chat/${c.matchId}`} className="flex items-center gap-3 pl-4 active:bg-fill">
                   <span className="relative">
-                    {c.needsReply && <span className="absolute top-1/2 -left-3 size-2.5 -translate-y-1/2 rounded-full bg-tint" />}
+                    {c.needsReply && <span className="absolute top-1/2 -left-3 size-2.5 -translate-y-1/2 rounded-full bg-tint-fill" />}
                     <PersonAvatar name={c.card.username} src={c.card.photoUrl} className="size-[52px] text-2xl" />
                   </span>
                   <div className="min-w-0 flex-1 border-b-[0.5px] border-separator py-3 pr-4">
                     <div className="flex items-baseline gap-2">
                       <span className="truncate font-semibold">{c.card.username}</span>
                       <span className="shrink-0 text-[13px] text-label-2">
-                        {c.kind === "tenant_tenant" ? "Team up" : c.card.role === "renter" ? "Room" : "Tenant"}
+                        {c.kind === "tenant_tenant" ? "Search together" : c.card.role === "renter" ? "Has a room" : "Needs a room"}
                       </span>
                       <span className="ml-auto shrink-0 text-[15px] text-label-2">{ago(c.last!.createdAt)}</span>
                     </div>

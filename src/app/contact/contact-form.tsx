@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { contactTeam } from "@/app/actions/safety";
 import { FormError } from "@/components/field";
-import { BottomBar, Section, inputCls } from "@/components/ios";
+import { BottomBar, LabeledInput, Section } from "@/components/ios";
 import { Button } from "@/components/ui/button";
 
 export function ContactForm({ channel, defaultEmail }: { channel: "user" | "authority"; defaultEmail: string }) {
@@ -21,13 +21,13 @@ export function ContactForm({ channel, defaultEmail }: { channel: "user" | "auth
     <form action={action} className="flex flex-1 flex-col gap-6">
       <input type="hidden" name="channel" value={channel} />
       <Section>
-        <input name="name" required placeholder="Your name" className={inputCls} />
-        <input name="email" type="email" defaultValue={defaultEmail} required placeholder="E-mail" className={inputCls} />
-        {channel === "authority" && <input name="organisation" required placeholder="Organisation" className={inputCls} />}
+        <LabeledInput label="Name" name="name" required maxLength={100} autoComplete="name" placeholder="Required" />
+        <LabeledInput label="E-mail" name="email" type="email" defaultValue={defaultEmail} required maxLength={254} autoComplete="email" placeholder="Required" />
+        {channel === "authority" && <LabeledInput label="Organisation" name="organisation" required maxLength={150} placeholder="e.g. Politie Amsterdam" />}
       </Section>
       <Section footer={channel === "authority" ? "Include a case or reference number if you have one." : "In immediate danger? Call 112."}>
-        <input name="subject" required placeholder="Subject" className={inputCls} />
-        <textarea name="body" rows={6} required placeholder="Message" className="block w-full resize-none bg-transparent px-4 py-3 text-[17px] outline-none placeholder:text-label-3" />
+        <LabeledInput label="Subject" name="subject" required maxLength={150} placeholder="Required" />
+        <textarea aria-label="Message" name="body" rows={6} required maxLength={5000} placeholder="Message" className="block w-full resize-none bg-transparent px-4 py-3 text-[17px] outline-none placeholder:text-label-3" />
       </Section>
       <FormError msg={state?.error} />
       <BottomBar>

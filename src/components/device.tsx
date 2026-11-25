@@ -23,13 +23,13 @@ export function Device({ children }: { children: React.ReactNode }) {
             <Providers>{children}</Providers>
           </div>
           <span aria-hidden className="pointer-events-none absolute bottom-[8px] left-1/2 z-[80] hidden h-[5px] w-[134px] -translate-x-1/2 rounded-full bg-label sm:block" />
-          <Toaster position="top-center" offset={60} mobileOffset={16} />
+          <Toaster position="bottom-center" offset={{ bottom: 104 }} mobileOffset={{ bottom: 96 }} />
         </div>
       </div>
       {/* scale the device to fit short windows */}
       <script
         dangerouslySetInnerHTML={{
-          __html: `(function(){function f(){var s=Math.min(1,(innerHeight-48)/880,(innerWidth-48)/421);document.documentElement.style.setProperty('--device-scale',s)}f();addEventListener('resize',f)})()`,
+          __html: `(function(){function f(){var s=Math.max(0.85,Math.min(1,(innerHeight-48)/880,(innerWidth-48)/421));document.documentElement.style.setProperty('--device-scale',s)}f();addEventListener('resize',f)})()`,
         }}
       />
     </>

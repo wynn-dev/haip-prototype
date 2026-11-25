@@ -8,6 +8,13 @@
       "when": 1794934078242,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795613878261,
+      "tag": "0001_trust_safety_integrity",
+      "breakpoints": true
     }
   ]
 }

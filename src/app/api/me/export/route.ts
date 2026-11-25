@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
 import { eq, inArray, or } from "drizzle-orm";
 import { db, schema } from "@/db";
-import { getSession } from "@/lib/session";
+import { currentUser } from "@/lib/auth";
 
 /** GDPR art. 15/20: everything we hold about you, as JSON. */
 export async function GET() {
-  const s = await getSession();
-  if (!s || s.stage !== "full") return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const id = s.uid;
-  const [user] = await db.select().from(schema.users).where(eq(schema.users.id, id));
-  if (!user) return NextResponse.json({ error: "not found" }, { status: 404 });
-  const { passwordHash: _omit, ...account } = user;
+  // works for removed accounts too: they keep the right to their data
+  const user = await currentUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const id = user.id;
+  const { passwordHash: _omit, sessionVersion: _v, ...account } = user;
 
   const matches = await db
     .select()
@@ -18,13 +17,18 @@ export async function GET() {
     .where(or(eq(schema.matches.userA, id), eq(schema.matches.userB, id)));
   const matchIds = matches.map((m) => m.id);
 
-  const [profile, listing, swipes, messages, blocks, reportsFiled, appeals, contact] = await Promise.all([
+  const [profile, listing, swipes, messages, blocks, reportsFiled, reportsAboutYou, appeals, contact] = await Promise.all([
     db.select().from(schema.profiles).where(eq(schema.profiles.userId, id)),
     db.select().from(schema.listings).where(eq(schema.listings.userId, id)),
     db.select().from(schema.swipes).where(eq(schema.swipes.swiperId, id)),
     matchIds.length ? db.select().from(schema.messages).where(inArray(schema.messages.matchId, matchIds)) : [],
     db.select().from(schema.blocks).where(eq(schema.blocks.blockerId, id)),
     db.select().from(schema.reports).where(eq(schema.reports.reporterId, id)),
+    // reports about you: what was reported and the outcome, never who reported you
+    db
+      .select({ reason: schema.reports.reason, status: schema.reports.status, createdAt: schema.reports.createdAt })
+      .from(schema.reports)
+      .where(eq(schema.reports.reportedId, id)),
     db.select().from(schema.appeals).where(eq(schema.appeals.userId, id)),
     db.select().from(schema.contactRequests).where(eq(schema.contactRequests.userId, id)),
   ]);
@@ -40,6 +44,7 @@ export async function GET() {
     messages,
     blocks,
     reportsFiled,
+    reportsAboutYou,
     appeals,
     contactRequests: contact,
   };

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { BadgeCheck, Check, GraduationCap, Home, IdCard, TriangleAlert } from "lucide-react";
+import { BadgeCheck, MoreHorizontal, Check, GraduationCap, Home, IdCard, TriangleAlert } from "lucide-react";
 import type { CardData } from "@/lib/deck";
-import { ALLERGIES, CLEANLINESS, FEATURES, GENDERS, GUESTS, LOOKING_STATUS, PETS, SLEEP, labelOf } from "@/lib/options";
+import { CLEANLINESS, FEATURES, GENDERS, GUESTS, LOOKING_STATUS, PETS, SLEEP, labelOf } from "@/lib/options";
 import { gradientFor } from "@/components/person-avatar";
 import { cn } from "@/lib/utils";
 
@@ -30,9 +30,11 @@ function Photos({ c, fill }: { c: CardData; fill?: boolean }) {
         </div>
       )}
 
+      {/* keeps the photo indicators and buttons readable on bright photos */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/35 to-transparent" />
       {photos.length > 1 && (
         <>
-          <div className="absolute inset-x-3 top-2.5 flex gap-1">
+          <div className="absolute inset-x-3 top-2.5 flex gap-1 drop-shadow-[0_1px_2px_rgb(0_0_0/0.4)]">
             {photos.map((p, k) => (
               <span key={p} className={cn("h-[3px] flex-1 rounded-full", k === i ? "bg-white" : "bg-white/40")} />
             ))}
@@ -46,7 +48,7 @@ function Photos({ c, fill }: { c: CardData; fill?: boolean }) {
         <div className="flex items-center gap-1.5">
           <h2 className="text-[28px] leading-tight font-bold tracking-[-0.03em]">{c.username}</h2>
           <span className="text-[28px] leading-tight font-normal tracking-[-0.02em] opacity-90">{c.age}</span>
-          {c.ageVerified && <BadgeCheck className="ml-0.5 size-6 fill-[#0a84ff] text-white" strokeWidth={2} aria-label="Verified" />}
+          {c.ageVerified && <BadgeCheck className="ml-0.5 size-6 fill-[#0a63e0] text-white" strokeWidth={2} aria-label="18+ checked" />}
         </div>
         <p className="mt-0.5 truncate text-[15px] opacity-90">{subtitle}</p>
       </div>
@@ -56,7 +58,7 @@ function Photos({ c, fill }: { c: CardData; fill?: boolean }) {
 
 function Rows({ rows }: { rows: [string, React.ReactNode][] }) {
   return (
-    <dl className="group-list bg-surface-2/60 dark:bg-surface-2">
+    <dl className="group-list bg-surface-2 [--group-bg:var(--surface-2)]">
       {rows.map(([k, v]) => (
         <div key={k} className="flex min-h-11 items-center justify-between gap-4 px-4 py-2 text-[15px]">
           <dt className="text-label-2">{k}</dt>
@@ -78,11 +80,36 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
 
 /** Everything a potential housemate needs, on one scrollable card. */
 /** `fill`: photo sized to the scroll container (needs `container-type: size` on it), leaving a peek of the details. */
-export function ProfileCard({ c, showScore = true, fill, className }: { c: CardData; showScore?: boolean; fill?: boolean; className?: string }) {
+export function ProfileCard({
+  c,
+  showScore = true,
+  fill,
+  onMore,
+  className,
+}: {
+  c: CardData;
+  showScore?: boolean;
+  fill?: boolean;
+  /** shows a ••• button (report/block) that scrolls with the photo */
+  onMore?: () => void;
+  className?: string;
+}) {
   const l = c.listing;
   return (
     <article className={cn("relative overflow-hidden rounded-[28px] bg-surface", className)}>
       <Photos c={c} fill={fill} />
+      {onMore && (
+        <button
+          type="button"
+          onClick={onMore}
+          aria-label="Report or block"
+          className="absolute top-3 left-2 grid size-11 place-items-center"
+        >
+          <span className="grid size-8 place-items-center rounded-full bg-black/50 text-white backdrop-blur-md">
+            <MoreHorizontal className="size-5" />
+          </span>
+        </button>
+      )}
       {showScore && (
         <span className="absolute top-5 right-4 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-[13px] font-semibold text-white backdrop-blur-md">
           {c.score}% match
@@ -91,14 +118,16 @@ export function ProfileCard({ c, showScore = true, fill, className }: { c: CardD
 
       <div className="flex flex-col gap-6 px-4 pt-5 pb-6">
         {c.lookingStatus !== "looking" && (
-          <p className="tag self-start">{labelOf(LOOKING_STATUS, c.lookingStatus)}</p>
+          <p className="tag self-start">
+            {c.role === "renter" && c.lookingStatus === "found_house" ? "Room filled" : labelOf(LOOKING_STATUS, c.lookingStatus)} · not shown to others
+          </p>
         )}
 
         {(c.reasons.length > 0 || c.warnings.length > 0) && (
           <ul className="flex flex-col gap-2.5 px-1">
             {c.reasons.map((r) => (
               <li key={r} className="flex items-center gap-3 text-[15px]">
-                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-positive text-white"><Check className="size-3" strokeWidth={3.5} /></span>
+                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-tint-fill text-white"><Check className="size-3" strokeWidth={3.5} /></span>
                 {r}
               </li>
             ))}
@@ -153,7 +182,6 @@ export function ProfileCard({ c, showScore = true, fill, className }: { c: CardD
               ["Guests", labelOf(GUESTS, c.guests)],
               ["Smoking", c.smokes ? "Smokes" : "Doesn't smoke"],
               ...(c.pets.length ? ([["Pets", c.pets.map((p) => labelOf(PETS, p)).join(", ")]] as [string, string][]) : []),
-              ...(c.allergies.length ? ([["Allergies", c.allergies.map((a) => labelOf(ALLERGIES, a)).join(", ")]] as [string, string][]) : []),
             ]}
           />
         </Block>
@@ -168,7 +196,7 @@ export function ProfileCard({ c, showScore = true, fill, className }: { c: CardD
         </Block>
 
         <div className="flex flex-col gap-2 px-1 text-[13px] text-label-2">
-          {c.ageVerified && <p className="flex items-center gap-2"><IdCard className="size-4" /> Age verified with ID</p>}
+          {c.ageVerified && <p className="flex items-center gap-2"><IdCard className="size-4" /> 18+ check done (simulated in this prototype)</p>}
           {c.studentInstitution && <p className="flex items-center gap-2"><GraduationCap className="size-4" /> Student at {c.studentInstitution}</p>}
         </div>
       </div>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { login } from "@/app/actions/auth";
 import { FormError } from "@/components/field";
-import { BottomBar, LargeTitle, NavBar, inputCls } from "@/components/ios";
+import { BottomBar, LabeledInput, LargeTitle, NavBar } from "@/components/ios";
 import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
@@ -12,12 +12,12 @@ export default function LoginPage() {
   return (
     <form action={action} className="flex flex-1 flex-col">
       <NavBar back="/" />
-      <LargeTitle sub="We'll text a code to your phone next.">Log in</LargeTitle>
+      <LargeTitle sub="Next, you'll enter a login code sent to your phone.">Log in</LargeTitle>
       <div className="mt-4 flex flex-col gap-6">
         <section className="px-4">
           <div className="group-list">
-            <input id="email" name="email" defaultValue={state?.values?.email} type="email" autoComplete="email" required placeholder="E-mail" className={inputCls} />
-            <input id="password" name="password" type="password" autoComplete="current-password" required placeholder="Password" className={inputCls} />
+            <LabeledInput label="E-mail" id="email" name="email" defaultValue={state?.values?.email} type="email" autoComplete="email" required placeholder="you@example.com" />
+            <LabeledInput label="Password" id="password" name="password" type="password" autoComplete="current-password" required placeholder="Required" />
           </div>
         </section>
         <FormError msg={state?.error} />

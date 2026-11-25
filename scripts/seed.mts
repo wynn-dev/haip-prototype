@@ -4,7 +4,7 @@
  */
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { like, inArray } from "drizzle-orm";
+import { eq, inArray, like, or } from "drizzle-orm";
 import { connect } from "../src/db/connect";
 import * as schema from "../src/db/schema";
 
@@ -36,9 +36,15 @@ const portraitFor = (g: string) => {
   if (rnd() < 0.35 || cursor[k] >= pools[k].length) return null;
   return photo(pools[k][cursor[k]++]);
 };
-/** Room photos may repeat across listings, but never within one. */
-const roomPhotos = (n: number) =>
-  Array.from({ length: n }, () => photo(pools.rooms[cursor.rooms++ % pools.rooms.length])).filter((x): x is string => !!x);
+/** Room photos are never reused: once the pool runs out, listings simply have no photos yet. */
+const roomPhotos = (n: number) => {
+  const out: string[] = [];
+  while (out.length < n && cursor.rooms < pools.rooms.length) {
+    const p = photo(pools.rooms[cursor.rooms++]);
+    if (p) out.push(p);
+  }
+  return out;
+};
 
 const dob = (age: number) => {
   const d = new Date();
@@ -52,7 +58,14 @@ const inMonths = (m: number) => {
 };
 
 const old = await db.select({ id: schema.users.id }).from(schema.users).where(like(schema.users.email, "%@demo.test"));
-if (old.length) await db.delete(schema.users).where(inArray(schema.users.id, old.map((o) => o.id)));
+if (old.length) {
+  const oldIds = old.map((o) => o.id);
+  // matches, messages and reports are kept when one person deletes their account,
+  // so a reseed removes the demo rows explicitly instead of leaving orphans behind
+  await db.delete(schema.matches).where(or(inArray(schema.matches.userA, oldIds), inArray(schema.matches.userB, oldIds)));
+  await db.delete(schema.reports).where(or(inArray(schema.reports.reporterId, oldIds), inArray(schema.reports.reportedId, oldIds)));
+  await db.delete(schema.users).where(inArray(schema.users.id, oldIds));
+}
 await db.delete(schema.contactRequests).where(like(schema.contactRequests.email, "%@demo.test"));
 
 const passwordHash = await bcrypt.hash("roommates", 10);
@@ -90,7 +103,36 @@ const HOODS: Record<string, string[]> = {
   Tilburg: ["Spoorzone", "Oud-Zuid", "Reeshof"],
   Wageningen: ["Centrum", "Noordwest", "De Nude"],
 };
-const STREETS = ["Kanaalstraat", "Prinsengracht", "Oudegracht", "Nieuwe Binnenweg", "Haarlemmerstraat", "Herestraat", "Molenstraat", "Lange Nieuwstraat"];
+const STREETS: Record<string, string[]> = {
+  Amsterdam: ["Prinsengracht", "Haarlemmerstraat", "Ferdinand Bolstraat", "Javastraat", "Kinkerstraat"],
+  Utrecht: ["Kanaalstraat", "Oudegracht", "Nobelstraat", "Biltstraat", "Amsterdamsestraatweg"],
+  Rotterdam: ["Nieuwe Binnenweg", "Oudedijk", "Zwart Janstraat", "Witte de Withstraat"],
+  "Den Haag": ["Prins Hendrikstraat", "Frederik Hendriklaan", "Weimarstraat"],
+  Leiden: ["Haarlemmerstraat", "Breestraat", "Hooigracht", "Morsweg"],
+  Delft: ["Oude Delft", "Voorstraat", "Phoenixstraat", "Mekelweg"],
+  Groningen: ["Herestraat", "Oosterstraat", "Nieuwe Ebbingestraat", "Paterswoldseweg"],
+  Eindhoven: ["Stratumseind", "Kruisstraat", "Woenselse Markt"],
+  Nijmegen: ["Groesbeekseweg", "Daalseweg", "Van Welderenstraat"],
+  Maastricht: ["Rechtstraat", "Wycker Brugstraat", "Tongersestraat"],
+  Enschede: ["Oldenzaalsestraat", "Hengelosestraat", "Haaksbergerstraat"],
+  Tilburg: ["Piusstraat", "Korvelseweg", "Noordstraat"],
+  Wageningen: ["Hoogstraat", "Bowlespark", "Stadsbrink"],
+};
+/** Typical monthly rent for a room (€, incl. bills) per city: [low, high]. */
+const RENT: Record<string, [number, number]> = {
+  Amsterdam: [700, 1150], Utrecht: [580, 950], Rotterdam: [520, 880], "Den Haag": [520, 880], Leiden: [520, 850],
+  Delft: [480, 800], Groningen: [380, 650], Eindhoven: [460, 760], Nijmegen: [400, 650], Maastricht: [420, 700],
+  Enschede: [340, 560], Tilburg: [380, 620], Wageningen: [360, 600],
+};
+const INSTITUTIONS: Record<string, string[]> = {
+  Amsterdam: ["Universiteit van Amsterdam", "Vrije Universiteit Amsterdam", "Hogeschool van Amsterdam"],
+  Utrecht: ["Universiteit Utrecht", "Hogeschool Utrecht"], Rotterdam: ["Erasmus Universiteit Rotterdam", "Hogeschool Rotterdam"],
+  "Den Haag": ["De Haagse Hogeschool", "Universiteit Leiden"], Leiden: ["Universiteit Leiden"], Delft: ["TU Delft"],
+  Groningen: ["Rijksuniversiteit Groningen", "Hanzehogeschool Groningen"], Eindhoven: ["TU Eindhoven", "Fontys"],
+  Nijmegen: ["Radboud Universiteit", "HAN University of Applied Sciences"], Maastricht: ["Maastricht University"],
+  Enschede: ["Universiteit Twente", "Saxion"], Tilburg: ["Tilburg University", "Fontys"], Wageningen: ["Wageningen University"],
+};
+const between = ([lo, hi]: [number, number]) => Math.round(int(lo, hi) / 25) * 25;
 const NAMES_W = ["lotte", "emma.v", "priya", "chiara", "zeynep", "ana.s", "julia_k", "fenna", "mei", "sofia.r", "noor", "ines",
   "anouk", "isa", "maria.l", "giulia", "hanna", "laura.m", "elif", "yara", "sara.b", "lea", "olivia", "amira", "chloe", "nadia",
   "femke", "roos", "eva.d", "lina", "aisha", "camille", "zofia", "marta", "ingrid", "keiko", "valentina", "tess", "jade", "freya"];
@@ -99,24 +141,44 @@ const NAMES_M = ["bram", "luca", "mateo", "jonas.h", "arjun", "tomasz", "youssef
   "ruben", "noah.k", "lars", "elias", "kofi", "matteo", "hugo", "ali", "stefan", "wei", "tobias", "joris", "andrei", "mehmet"];
 const NAMES_X = ["robin", "sam.q", "alex", "kai", "charlie", "noa", "jamie", "river", "quinn", "ash"];
 const LANG_EXTRA = ["Dutch", "German", "Spanish", "Italian", "Polish", "Turkish", "Hindi", "Mandarin", "Greek", "Portuguese", "French", "Arabic"];
-const BIOS = [
-  "Second-year law student. Morning runner, evening cook, weekend museum person.",
-  "Starting a master's in AI. Quiet during the week, happy to host a games night.",
-  "Nurse in training, so my hours are odd, but I'm very tidy and very quiet.",
-  "Erasmus student for one year. Looking for friendly people, not a party house.",
-  "Architecture student. Expect cardboard models on the kitchen table, but only briefly.",
-  "Working my first job after graduating. Into cycling, board games and good bread.",
-  "MSc student, mostly found at the library or the climbing gym. I cook big batches and share.",
-  "Exchange semester! Looking for a calm place and people to explore the city with.",
-  "Design student. I own too many plants and one very good coffee machine.",
-  "PhD candidate, early to bed, early to the lab. Quiet but up for borrel on Fridays.",
-  "Bachelor's in econ, part-time barista. Will fix your bike.",
-  "Moving for an internship. Tidy, friendly, terrible at Dutch but learning.",
-  "Musician (headphones, I promise). Love a shared Sunday dinner.",
-  "Medicine student with weird shifts. Respectful of quiet hours.",
-];
-const TITLES = ["Furnished room with big windows", "Room in a shared canal-side flat", "Corner room with balcony", "Room in a quiet family-run house", "Spacious room, shared garden", "Sunny room by the canal", "Big room in a chill student house", "Attic room with skylight", "Room in a cosy 3-person flat", "Bright room, 5 min to campus", "Quiet room near the park"];
-const FEATS = ["shared_kitchen", "shared_bathroom", "private_bathroom", "furnished", "balcony", "garden", "washing_machine", "bike_storage", "registration", "bills_included", "pets_allowed"];
+// Bios are picked to fit the person: studying or working, looking for a room or offering one.
+const BIOS = {
+  studentTenant: [
+    "MSc student, mostly found at the library or the climbing gym. I cook big batches and share.",
+    "Exchange semester! Looking for a calm place and people to explore the city with.",
+    "Second-year law student. Morning runner, evening cook, weekend museum person.",
+    "Starting a master's in AI. Quiet during the week, happy to host a games night.",
+    "Architecture student. Expect cardboard models on the kitchen table, but only briefly.",
+    "Bachelor's in economics, part-time barista. Will fix your bike.",
+  ],
+  studentRenter: [
+    "Our housemate is graduating, so a room is free. We're students who share dinner a few times a week.",
+    "Student house with a big kitchen and a small garden. Looking for someone friendly and reliable.",
+    "I'm doing my master's and have a spare room in my flat. Quiet, tidy, easy-going.",
+  ],
+  workTenant: [
+    "Moving for a new job. Friendly, tidy, terrible at Dutch but learning.",
+    "Working my first job after graduating. Into cycling, board games and good bread.",
+    "Nurse with shift work, so I'm respectful of quiet hours and rarely home in the evening.",
+    "Software developer, works from the office most days. Looking for a calm, clean place.",
+  ],
+  workRenter: [
+    "I rent a flat with a spare room and would like a considerate housemate. I work office hours.",
+    "Two working housemates looking for a third. We like a tidy kitchen and the odd shared meal.",
+    "My flatmate moved abroad, so the second bedroom is free. I'm out at work most of the day.",
+  ],
+  olderTenant: [
+    "Recently moved back to the Netherlands for work. Quiet, organised, happy to share chores.",
+    "Between houses after a move. Looking for a calm place with considerate people.",
+    "Working in the city during the week. Tidy and easy to live with.",
+  ],
+  olderRenter: [
+    "My children have moved out and I have a spare room in a quiet house. Students welcome.",
+    "I own a house near the centre and rent out one furnished room. Quiet household.",
+    "Spare room in my apartment for someone who wants a calm, tidy home.",
+  ],
+};const ADJ = ["Bright", "Quiet", "Sunny", "Spacious", "Cosy", "Furnished", "Attic", "Corner"];
+const FEATS = ["shared_kitchen", "furnished", "balcony", "garden", "washing_machine", "bike_storage", "registration", "bills_included", "pets_allowed"];
 
 const usedNames = new Set<string>(["sanne", "daan", "mod.team", "quick.deal"]);
 function randomPerson(i: number): Spec {
@@ -132,18 +194,19 @@ function randomPerson(i: number): Spec {
   const age = band < 0.62 ? int(19, 29) : band < 0.86 ? int(30, 44) : int(45, 66);
   const prefAgeMin = age >= 45 ? int(18, 35) : 18;
   const prefAgeMax = age >= 30 || rnd() < 0.4 ? 99 : int(30, 45);
+  const isStudent = age <= 30 && rnd() < 0.8;
   const smokes = rnd() < 0.12;
   const pets = rnd() < 0.15 ? [pick(["cat", "dog"])] : [];
   const spec: Spec = {
     email: `${name.replace(/[^a-z0-9]/g, "")}${i}@demo.test`,
     role,
     age,
-    student: rnd() < 0.7 ? pick(["Universiteit van Amsterdam", "Vrije Universiteit Amsterdam", "Universiteit Utrecht", "TU Delft", "Universiteit Leiden", "Erasmus Universiteit Rotterdam", "Hogeschool van Amsterdam", "Rijksuniversiteit Groningen", "TU Eindhoven", "Hogeschool Utrecht"]) : undefined,
+    student: isStudent ? pick(INSTITUTIONS[city]) : undefined,
     profile: {
       username: name,
       gender: g,
       photoUrl: portraitFor(g),
-      bio: pick(BIOS),
+      bio: pick(BIOS[`${age >= 45 ? "older" : isStudent ? "student" : "work"}${role === "renter" ? "Renter" : "Tenant"}` as keyof typeof BIOS]),
       languages: ["English", ...some(LANG_EXTRA, int(0, 2))],
       cleanliness: int(2, 5),
       sleep: pick(["early", "flexible", "night"] as const),
@@ -161,23 +224,27 @@ function randomPerson(i: number): Spec {
   };
   if (role === "tenant") {
     Object.assign(spec.profile, {
-      maxRent: int(10, 48) * 25,
+      // budgets cluster around what rooms cost in their main city
+      maxRent: Math.max(250, between(RENT[city]) + pick([-150, -75, 0, 0, 75, 150])),
       areas: [city, ...(rnd() < 0.55 ? [pick(CITY_WEIGHTS)] : []), ...(rnd() < 0.2 ? [pick(CITY_WEIGHTS)] : [])].filter((v, k, a) => a.indexOf(v) === k),
       moveInFrom: inMonths(int(0, 3)),
       stayMonths: pick([5, 6, 6, 10, 12, 12, 24]),
     });
   } else {
+    const householdSize = int(2, 5);
+    const neighbourhood = pick(HOODS[city]);
     spec.listing = {
-      title: pick(TITLES),
+      title: rnd() < 0.5 ? `${pick(ADJ)} room in ${neighbourhood}` : `${pick(ADJ)} room in a ${householdSize}-person ${pick(["house", "flat"])}`,
       city,
-      neighbourhood: pick(HOODS[city]),
-      address: `${pick(STREETS)} ${int(2, 180)}`,
-      rent: int(12, 44) * 25,
+      neighbourhood,
+      address: `${pick(STREETS[city])} ${int(2, 180)}`,
+      rent: between(RENT[city]),
       durationMonths: pick([6, 6, 12, 12, 24]),
       availableFrom: inMonths(int(0, 2)),
       roomsAvailable: 1,
-      householdSize: int(2, 5),
-      features: some(FEATS, int(3, 6)).concat(smokes ? ["smoking_allowed"] : []),
+      householdSize,
+      // exactly one bathroom type per listing
+      features: [rnd() < 0.3 ? "private_bathroom" : "shared_bathroom", ...some(FEATS, int(2, 5))].concat(smokes ? ["smoking_allowed"] : []),
       photos: roomPhotos(int(1, 3)),
     };
   }
@@ -317,18 +384,29 @@ await db.insert(schema.messages).values([
   { matchId: m.id, senderId: daan, body: "No pets at all! Want to do a video viewing this week? Thursday evening?", createdAt: t(25) },
 ]);
 
-// moderation demo: a trusted reporter with a good track record + an open queue
+// moderation demo: a trusted reporter whose past reports led to removals, plus an open queue
+const nameOf = new Map(specs.map((x) => [ids[x.email], x.profile.username]));
 const reporter = others[0];
 const sketchy = others[5];
 const pastTargets = others.slice(10, 14);
 for (const [k, target] of pastTargets.entries()) {
-  await db.insert(schema.reports).values({ reporterId: reporter, reportedId: target, reason: "fake", status: k < 3 ? "upheld" : "dismissed", resolvedAt: now });
+  const upheld = k < 3;
+  await db.insert(schema.reports).values({ reporterId: reporter, reportedId: target, reportedUsername: nameOf.get(target), reason: "fake", status: upheld ? "upheld" : "dismissed", resolvedAt: now });
+  // an upheld report means the account was removed
+  if (upheld)
+    await db
+      .update(schema.users)
+      .set({ status: "removed", removalReason: "Used someone else's photos and a fake identity. This breaks our community rules.", removedAt: now })
+      .where(eq(schema.users.id, target));
 }
-await db.insert(schema.reports).values([
-  { reporterId: reporter, reportedId: sketchy, reason: "scam", details: "Asked me to transfer the deposit to a German bank account before showing the room." },
-  { reporterId: sanne, reportedId: sketchy, reason: "scam", details: "Same thing, wanted €400 'to hold the room'." },
-  { reporterId: others[2], reportedId: others[8], reason: "inappropriate", details: "Bio has a weird joke in it." },
-]);
+const open = [
+  { reporterId: reporter, reportedId: sketchy, reason: "scam" as const, details: "Asked me to transfer the deposit to a German bank account before showing the room." },
+  { reporterId: sanne, reportedId: sketchy, reason: "scam" as const, details: "Same thing, wanted €400 'to hold the room'." },
+  { reporterId: others[2], reportedId: others[8], reason: "inappropriate" as const, details: "Bio has a weird joke in it." },
+];
+await db.insert(schema.reports).values(open.map((r) => ({ ...r, reportedUsername: nameOf.get(r.reportedId) })));
+// reporting also blocks, exactly like in the app
+await db.insert(schema.blocks).values(open.map((r) => ({ blockerId: r.reporterId, blockedId: r.reportedId }))).onConflictDoNothing();
 await db.insert(schema.appeals).values({
   userId: ids["removed@demo.test"],
   message: "I was only asking whether people could pay the deposit on the day of signing, it was a misunderstanding.",

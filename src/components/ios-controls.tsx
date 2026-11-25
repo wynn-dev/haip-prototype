@@ -13,9 +13,12 @@ export function NavBar({
   back,
   backLabel = "Back",
   trailing,
+  leading,
   className,
 }: {
   title?: React.ReactNode;
+  /** replaces the back button, e.g. a Cancel button */
+  leading?: React.ReactNode;
   back?: string | true;
   backLabel?: string;
   trailing?: React.ReactNode;
@@ -24,12 +27,12 @@ export function NavBar({
   const router = useRouter();
   const backEl =
     back === true ? (
-      <button onClick={() => router.back()} className="flex items-center text-tint active:opacity-60">
+      <button onClick={() => router.back()} className="-my-2 flex items-center py-2 pr-2 text-tint active:opacity-60">
         <ChevronLeft className="-ml-1.5 size-7" strokeWidth={2.2} />
         <span className="-ml-0.5">{backLabel}</span>
       </button>
     ) : back ? (
-      <Link href={back} className="flex items-center text-tint active:opacity-60">
+      <Link href={back} className="-my-2 flex items-center py-2 pr-2 text-tint active:opacity-60">
         <ChevronLeft className="-ml-1.5 size-7" strokeWidth={2.2} />
         <span className="-ml-0.5">{backLabel}</span>
       </Link>
@@ -41,7 +44,7 @@ export function NavBar({
         className,
       )}
     >
-      <div className="justify-self-start">{backEl}</div>
+      <div className="justify-self-start">{leading ?? backEl}</div>
       <div className="truncate text-[17px] font-semibold">{title}</div>
       <div className="justify-self-end">{trailing}</div>
     </header>
@@ -58,7 +61,7 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={cn("relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors duration-200", checked ? "bg-positive" : "bg-fill-2")}
+      className={cn("relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors duration-200", checked ? "bg-tint-fill" : "bg-fill-2")}
     >
       <span
         className={cn(
@@ -90,8 +93,10 @@ export function Segmented<T extends string>({
           aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "h-7 rounded-[7px] px-2 text-[13px] font-medium whitespace-nowrap transition-all",
-            value === o.value ? "bg-surface font-semibold shadow-[0_3px_8px_rgb(0_0_0/0.12),0_3px_1px_rgb(0_0_0/0.04)] dark:bg-[#636366]" : "text-label",
+            "h-8 rounded-[7px] px-2 text-[13px] font-medium whitespace-nowrap transition-all",
+            value === o.value
+              ? "bg-surface font-semibold shadow-[0_3px_8px_rgb(0_0_0/0.12),0_3px_1px_rgb(0_0_0/0.04)] dark:bg-[#7c7c80] dark:ring-1 dark:ring-white/40"
+              : "text-label",
           )}
         >
           {o.label}
@@ -119,7 +124,7 @@ export function Stepper({
   return (
     <div className="flex items-center gap-3">
       <span className="min-w-10 text-right text-label-2 tabular-nums">{format(value)}</span>
-      <div className="flex h-8 items-center rounded-[8px] bg-fill">
+      <div className="flex h-9 items-center rounded-[8px] bg-fill">
         <button type="button" aria-label="Decrease" disabled={value <= min} onClick={() => onChange(Math.max(min, value - step))} className="h-full w-[46px] text-xl leading-none disabled:text-label-3">−</button>
         <span className="h-4 w-px bg-separator" />
         <button type="button" aria-label="Increase" disabled={value >= max} onClick={() => onChange(Math.min(max, value + step))} className="h-full w-[46px] text-xl leading-none disabled:text-label-3">+</button>
@@ -156,7 +161,7 @@ export function Chips({
             aria-pressed={on}
             onClick={() => onChange(single ? (on ? [] : [o.value]) : on ? value.filter((v) => v !== o.value) : [...value, o.value])}
             className={cn(
-              "inline-flex h-8 items-center gap-1 rounded-full px-3.5 text-[15px] transition-colors active:scale-[0.97]",
+              "inline-flex h-9 items-center gap-1 rounded-full px-3.5 text-[15px] transition-colors active:scale-[0.97]",
               on ? "bg-label text-on-label" : "bg-fill text-label",
             )}
           >

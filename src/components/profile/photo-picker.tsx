@@ -33,7 +33,7 @@ export function AvatarPicker({ name, value, onChange }: { name: string; value: s
         <PersonAvatar name={name || "?"} src={value} className="size-28 text-[3rem]" />
         {busy && <span className="absolute inset-0 grid place-items-center rounded-full bg-black/40"><Loader2 className="size-6 animate-spin text-white" /></span>}
         {!value && !busy && (
-          <span className="absolute right-0 bottom-0 grid size-9 place-items-center rounded-full border-[3px] border-bg bg-tint text-white">
+          <span className="absolute right-0 bottom-0 grid size-9 place-items-center rounded-full border-[3px] border-bg bg-tint-fill text-white">
             <Camera className="size-4" />
           </span>
         )}
@@ -62,7 +62,7 @@ export function ListingPhotos({ value, onChange }: { value: string[]; onChange: 
         </div>
       ))}
       {value.length < 6 && (
-        <button type="button" onClick={() => ref.current?.click()} className="grid aspect-[3/4] w-28 shrink-0 place-items-center rounded-[10px] bg-fill text-label-2">
+        <button type="button" aria-label="Add photo" onClick={() => ref.current?.click()} className="grid aspect-[3/4] w-28 shrink-0 place-items-center rounded-[10px] bg-fill text-label-2">
           {busy ? <Loader2 className="size-6 animate-spin" /> : <Plus className="size-7" strokeWidth={1.75} />}
         </button>
       )}

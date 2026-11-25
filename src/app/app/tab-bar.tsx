@@ -25,7 +25,7 @@ export function TabBar({ unread }: { unread: number }) {
                 <span className="relative">
                   <t.icon className={cn("size-[26px]", active && "fill-current/15")} strokeWidth={active ? 2.2 : 1.8} />
                   {t.href === "/app/matches" && unread > 0 && (
-                    <span className="absolute -top-1 -right-2.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-danger px-1 text-[12px] font-semibold text-white">{unread}</span>
+                    <span className="absolute -top-1 -right-2.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-danger-fill px-1 text-[12px] font-semibold text-white">{unread}</span>
                   )}
                 </span>
                 {t.label}
