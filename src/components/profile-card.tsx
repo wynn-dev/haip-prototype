@@ -20,7 +20,7 @@ function Photos({ c, fill }: { c: CardData; fill?: boolean }) {
       : `Up to €${c.maxRent} · ${c.areas.join(", ")}`;
 
   return (
-    <div className={cn("relative w-full overflow-hidden bg-fill select-none", fill ? "h-[calc(100cqh-72px)] min-h-[320px]" : "aspect-[4/5]")}>
+    <div className={cn("relative w-full overflow-hidden bg-fill select-none", fill ? "h-[calc(100cqh-56px)] min-h-[320px]" : "aspect-[4/5]")}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt="" className="size-full object-cover" draggable={false} />
@@ -85,6 +85,7 @@ export function ProfileCard({
   showScore = true,
   fill,
   onMore,
+  footer,
   className,
 }: {
   c: CardData;
@@ -92,12 +93,15 @@ export function ProfileCard({
   fill?: boolean;
   /** shows a ••• button (report/block) that scrolls with the photo */
   onMore?: () => void;
+  /** rendered right under the photo, e.g. a "More about …" button (with `fill`, photo + this = the card's height) */
+  footer?: React.ReactNode;
   className?: string;
 }) {
   const l = c.listing;
   return (
     <article className={cn("relative overflow-hidden rounded-[28px] bg-surface", className)}>
       <Photos c={c} fill={fill} />
+      {footer && <div className="grid h-14 place-items-center bg-surface">{footer}</div>}
       {onMore && (
         <button
           type="button"
