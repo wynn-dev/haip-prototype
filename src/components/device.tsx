@@ -29,7 +29,7 @@ export function Device({ children }: { children: React.ReactNode }) {
       {/* scale the device to fit short windows */}
       <script
         dangerouslySetInnerHTML={{
-          __html: `(function(){function f(){var s=Math.max(0.85,Math.min(1,(innerHeight-48)/880,(innerWidth-48)/421));document.documentElement.style.setProperty('--device-scale',s)}f();addEventListener('resize',f)})()`,
+          __html: `(function(){function f(){var s=Math.min(1,(innerHeight-32)/880,(innerWidth-32)/421);document.documentElement.style.setProperty('--device-scale',s)}f();addEventListener('resize',f)})()`,
         }}
       />
     </>

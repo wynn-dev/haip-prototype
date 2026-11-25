@@ -26,7 +26,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable}`}>
-      <body className="min-h-dvh font-sans sm:flex sm:min-h-dvh sm:items-center sm:justify-center sm:py-4 sm:bg-[radial-gradient(120%_80%_at_50%_0%,#f4f4f7_0%,#dcdce2_100%)] dark:sm:bg-[radial-gradient(120%_80%_at_50%_0%,#1c1c1f_0%,#050506_100%)]">
+      <body className="min-h-dvh font-sans sm:flex sm:h-dvh sm:items-center sm:justify-center sm:overflow-hidden sm:bg-[radial-gradient(120%_80%_at_50%_0%,#f4f4f7_0%,#dcdce2_100%)] dark:sm:bg-[radial-gradient(120%_80%_at_50%_0%,#1c1c1f_0%,#050506_100%)]">
         <Device>{children}</Device>
       </body>
     </html>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { Heart, Inbox, X } from "lucide-react";
+import { ChevronDown, Heart, Inbox, X } from "lucide-react";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "motion/react";
 import { toast } from "sonner";
 import { loadMoreCards, swipe } from "@/app/actions/swipe";
@@ -26,6 +26,9 @@ function SwipeCard({
   forced: "like" | "pass" | null;
   onMore: () => void;
 }) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [atEnd, setAtEnd] = useState(false);
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-300, 300], [-10, 10]);
   const likeOpacity = useTransform(x, [30, THRESHOLD], [0, 1]);
@@ -55,8 +58,37 @@ function SwipeCard({
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.2 }}
     >
-      <div className="h-full overflow-y-auto overscroll-contain rounded-[28px] shadow-[var(--shadow-card)] scrollbar-none [container-type:size]">
-        <ProfileCard c={card} fill onMore={onMore} />
+      {/* one rounded clip for the scroller and its footer, so their edges can't bleed */}
+      <div className="relative h-full overflow-hidden rounded-[28px] shadow-[var(--shadow-card)]">
+      <div
+        ref={scroller}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          setScrolled(el.scrollTop > 8);
+          setAtEnd(el.scrollTop + el.clientHeight >= el.scrollHeight - 4);
+        }}
+        className="h-full overflow-y-auto overscroll-contain scrollbar-none [container-type:size]"
+      >
+        <ProfileCard
+          c={card}
+          fill
+          onMore={onMore}
+          footer={
+            <button
+              type="button"
+              onClick={() => scroller.current?.scrollBy({ top: scroller.current.clientHeight * 0.75, behavior: "smooth" })}
+              aria-label={`More about ${card.username}`}
+              className="flex h-9 items-center gap-1 rounded-full bg-fill px-4 text-[15px] font-medium text-label active:opacity-60"
+            >
+              More about {card.username} <ChevronDown className="size-4" strokeWidth={2.5} />
+            </button>
+          }
+        />
+      </div>
+      {/* The details continue below the photo. Say so with a clear footer instead of cutting a row in half;
+          once scrolling, a soft fade marks the edge until the end of the card. */}
+      {/* once scrolling, a soft fade marks the bottom edge until the end of the card */}
+      {scrolled && !atEnd && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-surface to-transparent" />}
       </div>
       <motion.div style={{ opacity: likeOpacity }} className="pointer-events-none absolute inset-0 grid place-items-center rounded-[28px] bg-positive/15">
         <span className="grid size-24 place-items-center rounded-full bg-tint-fill text-white shadow-lg"><Heart className="size-11 fill-white" /></span>
@@ -142,7 +174,7 @@ export function Deck({
           <>
             {cards[1] && (
               <div className="absolute inset-0 scale-[0.95] overflow-hidden rounded-[28px] opacity-60 [container-type:size]">
-                <ProfileCard c={cards[1]} fill />
+                <ProfileCard c={cards[1]} fill footer={<span className="h-9" />} />
               </div>
             )}
             <AnimatePresence>

@@ -13,7 +13,7 @@ export const DEMO_DELIVERY = !process.env.SMS_PROVIDER_KEY;
 export const MAX_OTP_ATTEMPTS = 5;
 /** Minimum gap between codes, and maximum codes per hour (SMS-pumping protection). */
 const RESEND_GAP_MS = 30_000;
-const MAX_PER_HOUR = 8;
+const MAX_PER_HOUR = 30; // shared demo accounts get many logins; guessing is capped per code instead
 
 type Purpose = "login" | "student";
 
