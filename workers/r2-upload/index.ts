@@ -11,7 +11,7 @@ interface Env {
 const MAX_BYTES = 8 * 1024 * 1024;
 const cors = {
   "access-control-allow-origin": "*",
-  "access-control-allow-methods": "PUT, OPTIONS",
+  "access-control-allow-methods": "PUT, DELETE, OPTIONS",
   "access-control-allow-headers": "content-type",
   "access-control-max-age": "3600",
 };
@@ -32,9 +32,29 @@ function safeEqual(a: string, b: string) {
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+    const url = new URL(req.url);
+
+    // Server-to-server: delete everything under one user's folder (account deletion).
+    if (req.method === "DELETE") {
+      const prefix = decodeURIComponent(url.pathname.slice(1));
+      const exp = Number(url.searchParams.get("exp"));
+      const sig = url.searchParams.get("sig") ?? "";
+      if (!/^(avatars|listings)\/[0-9a-f-]{36}\/$/.test(prefix)) return new Response("Bad prefix", { status: 400 });
+      if (!exp || exp < Date.now() / 1000) return new Response("Expired", { status: 403 });
+      if (!safeEqual(sig, await hmac(env.UPLOAD_SECRET, `delete:${prefix}:${exp}`))) return new Response("Bad signature", { status: 403 });
+      let deleted = 0;
+      let cursor: string | undefined;
+      do {
+        const page = await env.BUCKET.list({ prefix, cursor });
+        if (page.objects.length) await env.BUCKET.delete(page.objects.map((o) => o.key));
+        deleted += page.objects.length;
+        cursor = page.truncated ? page.cursor : undefined;
+      } while (cursor);
+      return Response.json({ ok: true, deleted });
+    }
+
     if (req.method !== "PUT") return new Response("Method not allowed", { status: 405, headers: cors });
 
-    const url = new URL(req.url);
     const key = decodeURIComponent(url.pathname.slice(1));
     const exp = Number(url.searchParams.get("exp"));
     const ct = url.searchParams.get("ct") ?? "";

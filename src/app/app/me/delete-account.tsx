@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { deleteAccount } from "@/app/actions/account";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export function DeleteAccount() {
   const [v, setV] = useState("");
@@ -18,7 +18,8 @@ export function DeleteAccount() {
         <DialogHeader className="items-center text-center">
           <DialogTitle className="text-[17px] font-semibold">Delete your account?</DialogTitle>
           <DialogDescription className="text-[13px] leading-snug">
-            Your profile, photos, swipes, matches and messages will be permanently deleted. You can{" "}
+            Your profile, photos, swipes and matches are deleted straight away. Messages you sent stay in the other
+            person&apos;s chat without your name, and reports about you are kept for safety. You can{" "}
             <a href="/api/me/export" download className="text-tint">export your data</a> first.
           </DialogDescription>
         </DialogHeader>
@@ -26,12 +27,14 @@ export function DeleteAccount() {
           value={v}
           onChange={(e) => setV(e.target.value)}
           placeholder="Type DELETE"
+          aria-label="Type DELETE to confirm"
           className="h-9 rounded-[8px] border-[0.5px] border-separator bg-bg px-2.5 text-[15px] outline-none"
         />
         {err && <p className="text-[13px] text-danger">{err}</p>}
         <Button variant="danger" size="xl" className="h-11 text-[17px]" disabled={pending || v.trim().toUpperCase() !== "DELETE"} onClick={() => start(async () => { const r = await deleteAccount(v); if (r?.error) setErr(r.error); })}>
           Delete everything
         </Button>
+        <DialogClose render={<button className="h-11 text-[17px] text-tint active:opacity-60" />}>Cancel</DialogClose>
       </DialogContent>
     </Dialog>
   );

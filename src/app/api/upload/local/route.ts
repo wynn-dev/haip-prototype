@@ -2,15 +2,16 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { getSession } from "@/lib/session";
+import { activeUser } from "@/lib/auth";
 import { r2Configured } from "@/lib/r2";
 
 /** Dev-only fallback when R2 env vars are missing: writes into public/uploads. */
 export async function POST(req: Request) {
   if (r2Configured || process.env.VERCEL)
     return NextResponse.json({ error: "Local uploads disabled" }, { status: 400 });
-  const s = await getSession();
-  if (!s || s.stage !== "full") return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const user = await activeUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const s = { uid: user.id };
   const form = await req.formData();
   const file = form.get("file");
   if (!(file instanceof File) || file.size > 8 * 1024 * 1024)

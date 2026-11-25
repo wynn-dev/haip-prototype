@@ -50,7 +50,7 @@ export function AppealActions({ id }: { id: number }) {
 export function ContactDone({ id }: { id: number }) {
   const [pending, start] = useTransition();
   return (
-    <button disabled={pending} onClick={() => start(() => markContactHandled(id))} className="shrink-0 text-[15px] text-tint disabled:opacity-40">
+    <button disabled={pending} onClick={() => start(() => markContactHandled(id))} className="-m-2 shrink-0 p-2 text-[15px] text-tint disabled:opacity-40">
       Done
     </button>
   );

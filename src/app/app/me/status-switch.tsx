@@ -6,7 +6,7 @@ import { Segmented } from "@/components/ios";
 
 type S = "looking" | "found_house" | "paused";
 
-export function StatusSwitch({ value }: { value: S }) {
+export function StatusSwitch({ value, role }: { value: S; role: "renter" | "tenant" }) {
   const [v, setV] = useOptimistic(value);
   const [, start] = useTransition();
   return (
@@ -14,7 +14,7 @@ export function StatusSwitch({ value }: { value: S }) {
       <Segmented<S>
         options={[
           { value: "looking", label: "Looking" },
-          { value: "found_house", label: "Found a house" },
+          { value: "found_house", label: role === "renter" ? "Room filled" : "Found a place" },
           { value: "paused", label: "Hidden" },
         ]}
         value={v}

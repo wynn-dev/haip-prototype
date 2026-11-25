@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { Heart, Inbox, MoreHorizontal, X } from "lucide-react";
+import { Heart, Inbox, X } from "lucide-react";
 import { AnimatePresence, animate, motion, useMotionValue, useTransform, type PanInfo } from "motion/react";
 import { toast } from "sonner";
 import { loadMoreCards, swipe } from "@/app/actions/swipe";
@@ -56,17 +56,10 @@ function SwipeCard({
       transition={{ duration: 0.2 }}
     >
       <div className="h-full overflow-y-auto overscroll-contain rounded-[28px] shadow-[var(--shadow-card)] scrollbar-none [container-type:size]">
-        <ProfileCard c={card} fill />
+        <ProfileCard c={card} fill onMore={onMore} />
       </div>
-      <button
-        onClick={onMore}
-        className="absolute top-5 left-4 grid size-8 place-items-center rounded-full bg-black/40 text-white backdrop-blur-md"
-        aria-label="Report or block"
-      >
-        <MoreHorizontal className="size-5" />
-      </button>
       <motion.div style={{ opacity: likeOpacity }} className="pointer-events-none absolute inset-0 grid place-items-center rounded-[28px] bg-positive/15">
-        <span className="grid size-24 place-items-center rounded-full bg-positive text-white shadow-lg"><Heart className="size-11 fill-white" /></span>
+        <span className="grid size-24 place-items-center rounded-full bg-tint-fill text-white shadow-lg"><Heart className="size-11 fill-white" /></span>
       </motion.div>
       <motion.div style={{ opacity: passOpacity }} className="pointer-events-none absolute inset-0 grid place-items-center rounded-[28px] bg-black/10">
         <span className="grid size-24 place-items-center rounded-full bg-surface text-label shadow-lg"><X className="size-11" strokeWidth={2.5} /></span>
@@ -119,8 +112,15 @@ export function Deck({
   useEffect(() => {
     if (cards.length > 5 || left <= cards.length || loading.current) return;
     loading.current = true;
-    loadMoreCards([...handled.current, ...cards.map((c) => c.userId)])
-      .then((more) => setCards((cur) => [...cur, ...more.filter((m) => !handled.current.has(m.userId) && !cur.some((c) => c.userId === m.userId))]))
+    const have = new Set([...handled.current, ...cards.map((c) => c.userId)]);
+    loadMoreCards([...have])
+      .then((more) => {
+        const fresh = more.filter((m) => !have.has(m.userId));
+        // nothing new on the server: trust what we hold, so this effect stops re-running
+        if (fresh.length === 0) setLeft(cards.length);
+        else setCards((cur) => [...cur, ...fresh.filter((m) => !cur.some((c) => c.userId === m.userId))]);
+      })
+      .catch(() => setLeft(cards.length))
       .finally(() => { loading.current = false; });
   }, [cards, left]);
 
@@ -174,7 +174,12 @@ export function Deck({
       </div>
 
       {top && (
-        <SafetyDrawer open={safety} onOpenChange={setSafety} targetId={top.userId} name={top.username} onDone={() => setCards((c) => c.slice(1))} />
+        <SafetyDrawer open={safety} onOpenChange={setSafety} targetId={top.userId} name={top.username} onDone={() => {
+            // a blocked/reported card leaves the deck like a swipe does
+            handled.current.add(top.userId);
+            setLeft((n) => Math.max(0, n - 1));
+            setCards((c) => c.filter((x) => x.userId !== top.userId));
+          }} />
       )}
 
       <AnimatePresence>
@@ -212,7 +217,7 @@ function EmptyDeck({ hints, seen }: { hints: EmptyHint[]; seen: number }) {
       <span className="grid size-16 shrink-0 place-items-center rounded-full bg-fill">
         <Inbox className="size-8 text-label-2" strokeWidth={1.5} />
       </span>
-      <h2 className="mt-1 text-[22px] font-bold tracking-[-0.02em]">{seen > 0 ? "You've seen everyone" : "No matches for your filters"}</h2>
+      <h2 className="mt-1 text-[22px] font-bold tracking-[-0.02em]">{seen > 0 ? "You've seen everyone" : "No one fits your filters"}</h2>
       <p className="text-[15px] text-label-2">
         {seen > 0 ? `You've already swiped on ${seen} ${seen === 1 ? "person" : "people"} who match. ` : ""}
         {blocked > 0 ? `${blocked} more ${blocked === 1 ? "person is" : "people are"} hidden by your filters:` : "New people join every day."}

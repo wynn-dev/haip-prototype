@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { LargeTitle, NavBar, Row, Section } from "@/components/ios";
 import { PersonAvatar } from "@/components/person-avatar";
@@ -8,7 +8,7 @@ import { UnblockButton } from "./unblock-button";
 
 export const metadata = { title: "Safety centre" };
 
-const STATUS = { open: "In review", upheld: "Action taken", dismissed: "No action" } as const;
+const STATUS = { open: "In review", upheld: "Action taken", dismissed: "No action", overturned: "Reversed on appeal" } as const;
 
 export default async function SafetyPage() {
   const user = await requireUser();
@@ -19,7 +19,7 @@ export default async function SafetyPage() {
       .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.blocks.blockedId))
       .where(eq(schema.blocks.blockerId, user.id)),
     db
-      .select({ r: schema.reports, username: schema.profiles.username })
+      .select({ r: schema.reports, username: sql<string | null>`coalesce(${schema.profiles.username}, ${schema.reports.reportedUsername})` })
       .from(schema.reports)
       .leftJoin(schema.profiles, eq(schema.profiles.userId, schema.reports.reportedId))
       .where(eq(schema.reports.reporterId, user.id))
@@ -30,7 +30,7 @@ export default async function SafetyPage() {
     <main className="flex flex-col gap-8 pb-10">
       <div>
         <NavBar back="/app/me" backLabel="Profile" />
-        <LargeTitle sub="Report or block anyone from the menu on their card or in a chat. Reports are reviewed by people, not bots.">Safety</LargeTitle>
+        <LargeTitle sub="Report or block anyone from the menu on their card or in a chat. Reports are reviewed by people, not bots.">Safety centre</LargeTitle>
       </div>
 
       <Section header="Blocked" footer={blocked.length ? "Blocked people can't see you, and you won't see them." : undefined}>

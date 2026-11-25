@@ -2,7 +2,7 @@ import Link from "next/link";
 import { SlidersHorizontal } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { getDeck, loadRow } from "@/lib/deck";
-import type { Exclusion } from "@/lib/matching";
+import { euro, type Exclusion } from "@/lib/matching";
 import { Deck } from "./deck";
 
 export const metadata = { title: "Home" };
@@ -11,13 +11,16 @@ export default async function DiscoverPage() {
   const user = await requireUser();
   const [{ cards, stats }, me] = await Promise.all([getDeck(user), loadRow(user.id)]);
   const p = me!.profile;
+  const renter = user.role === "renter";
   const label: Record<Exclusion, string> = {
-    city: user.role === "renter" ? "Looking in other cities" : `Not in your cities (${p.areas.join(", ")})`,
-    budget: `Above your budget (€${p.maxRent})`,
+    city: renter ? "Looking in other cities" : `Not in your cities (${p.areas.join(", ")})`,
+    budget: renter ? "Your rent is above their budget" : `Above your budget (${euro(p.maxRent ?? 0)}), or budgets too far apart`,
     age: `Outside your age range (${p.prefAgeMax >= 99 ? `${p.prefAgeMin}+` : `${p.prefAgeMin}–${p.prefAgeMax}`})`,
     gender: "Not a gender you chose",
     dealbreakers: "Ruled out by your dealbreakers",
     allergies: "Pets or smoke you're allergic to",
+    housemates: renter ? "Want a different number of housemates" : `Household size outside your range (${p.roommatesMin}–${p.roommatesMax} housemates)`,
+    "house-rules": renter ? "Have a pet, but your house doesn't allow pets" : "House doesn't allow your pet",
     "their-preferences": "Their preferences don't include you",
   };
   const hints = stats.excluded.map((e) => ({ label: label[e.reason], count: e.count }));

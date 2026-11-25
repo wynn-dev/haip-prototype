@@ -11,26 +11,50 @@ import { Row, Section } from "@/components/ios";
 import { PersonAvatar } from "@/components/person-avatar";
 import { ProfileCard } from "@/components/profile-card";
 import { SafetyDrawer } from "@/components/report-sheet";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import type { CardData } from "@/lib/deck";
 import { cn } from "@/lib/utils";
 
-type Msg = { id: number; senderId: string; body: string; createdAt: Date | string };
+type Msg = { id: number; senderId: string | null; body: string; createdAt: Date | string };
 
+/** Conversation starters depend on who you are in the match. */
 const ICEBREAKERS = {
-  renter_tenant: ["Is the room still available?", "Could I come by for a viewing?", "What are the housemates like?"],
-  tenant_tenant: ["Want to look for a place together?", "Which neighbourhoods are you looking at?", "What's your max budget?"],
+  tenant: ["Is the room still available?", "Could I come by for a viewing?", "What are the housemates like?"],
+  renter: ["Hi! When would you like to come and see the room?", "Tell me a bit about yourself", "When would you want to move in?"],
+  team: ["Want to look for a place together?", "Which neighbourhoods are you looking at?", "What's your max budget?"],
 };
 
+// Fixed time zone so server and browser render identical text (no hydration mismatch).
+const TZ = "Europe/Amsterdam";
+const dayKey = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: TZ });
 const dayLabel = (d: Date) => {
-  const now = new Date();
-  const diff = (+now - +d) / 864e5;
-  if (d.toDateString() === now.toDateString()) return "Today";
-  if (diff < 2) return "Yesterday";
-  return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
+  const today = dayKey(new Date());
+  const yesterday = dayKey(new Date(Date.now() - 864e5));
+  const k = dayKey(d);
+  if (k === today) return "Today";
+  if (k === yesterday) return "Yesterday";
+  return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", timeZone: TZ });
 };
+const timeOf = (d: Date) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
 
-export function Chat({ matchId, meId, other, kind, initial }: { matchId: string; meId: string; other: CardData; kind: "renter_tenant" | "tenant_tenant"; initial: Msg[] }) {
+export function Chat({
+  matchId,
+  meId,
+  myRole,
+  other,
+  kind,
+  initial,
+}: {
+  matchId: string;
+  meId: string;
+  myRole: "renter" | "tenant";
+  other: CardData;
+  kind: "renter_tenant" | "tenant_tenant";
+  initial: Msg[];
+}) {
+  const icebreakers = kind === "tenant_tenant" ? ICEBREAKERS.team : ICEBREAKERS[myRole];
+  const [confirmUnmatch, setConfirmUnmatch] = useState(false);
   const router = useRouter();
   const [msgs, setMsgs] = useState<Msg[]>(initial);
   const [text, setText] = useState("");
@@ -72,7 +96,7 @@ export function Chat({ matchId, meId, other, kind, initial }: { matchId: string;
   return (
     <main className="flex h-dvh flex-col bg-surface sm:h-full">
       <header className="z-10 grid shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b-[0.5px] border-separator bg-surface/85 px-2 pt-1 pb-1.5 backdrop-blur-xl">
-        <Link href="/app/matches" className="flex items-center justify-self-start text-tint active:opacity-60" aria-label="Back">
+        <Link href="/app/matches" className="grid size-11 place-items-center justify-self-start text-tint active:opacity-60" aria-label="Back to chats">
           <ChevronLeft className="size-8" strokeWidth={2.2} />
         </Link>
         <button className="flex flex-col items-center gap-0.5 active:opacity-60" onClick={() => setMenuOpen(true)}>
@@ -89,7 +113,7 @@ export function Chat({ matchId, meId, other, kind, initial }: { matchId: string;
         {msgs.length === 0 && (
           <div className="flex flex-col items-end gap-2 pt-6">
             <p className="w-full pb-1 text-center text-[13px] text-label-2">Tap to send</p>
-            {ICEBREAKERS[kind].map((q) => (
+            {icebreakers.map((q) => (
               <button key={q} onClick={() => send(q)} className="rounded-[18px] border border-tint/40 px-3.5 py-2 text-[17px] text-tint active:bg-tint/10">
                 {q}
               </button>
@@ -102,20 +126,20 @@ export function Chat({ matchId, meId, other, kind, initial }: { matchId: string;
             const prev = msgs[i - 1];
             const next = msgs[i + 1];
             const d = new Date(m.createdAt);
-            const showDay = !prev || new Date(prev.createdAt).toDateString() !== d.toDateString();
+            const showDay = !prev || dayKey(new Date(prev.createdAt)) !== dayKey(d);
             const tail = next?.senderId !== m.senderId;
             return (
               <li key={m.id} className="flex flex-col">
                 {showDay && (
                   <p className="py-2 text-center text-[11px] font-medium text-label-2">
-                    {dayLabel(d)} {d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                    {dayLabel(d)} {timeOf(d)}
                   </p>
                 )}
                 <div className={cn("flex", mine ? "justify-end" : "justify-start", tail ? "mb-2" : "mb-0.5")}>
                   <div
                     className={cn(
                       "max-w-[75%] rounded-[18px] px-3 py-[7px] text-[17px] leading-[22px] break-words whitespace-pre-wrap",
-                      mine ? "bg-tint text-white" : "bg-fill text-label",
+                      mine ? "bg-tint-fill text-white" : "bg-fill text-label",
                       tail && (mine ? "rounded-br-[6px]" : "rounded-bl-[6px]"),
                     )}
                   >
@@ -140,8 +164,10 @@ export function Chat({ matchId, meId, other, kind, initial }: { matchId: string;
             placeholder="Message"
             className="field-sizing-content max-h-32 flex-1 resize-none bg-transparent py-[6px] text-[17px] leading-[22px] outline-none placeholder:text-label-3"
           />
-          <button type="submit" disabled={!text.trim() || pending} className="mb-[3px] grid size-[28px] shrink-0 place-items-center rounded-full bg-tint text-white disabled:opacity-0" aria-label="Send">
-            <ArrowUp className="size-[18px]" strokeWidth={3} />
+          <button type="submit" disabled={!text.trim() || pending} className="-my-2 -mr-2 grid size-11 shrink-0 place-items-center disabled:opacity-0" aria-label="Send">
+            <span className="grid size-[28px] place-items-center rounded-full bg-tint-fill text-white">
+              <ArrowUp className="size-[18px]" strokeWidth={3} />
+            </span>
           </button>
         </div>
       </form>
@@ -154,22 +180,17 @@ export function Chat({ matchId, meId, other, kind, initial }: { matchId: string;
             <p className="text-[22px] font-bold tracking-[-0.02em]">{other.username}</p>
           </div>
           <Section>
-            <Row icon={UserRound} iconBg="bg-tint" label="View profile" chevron onClick={() => { setMenuOpen(false); setProfileOpen(true); }} />
+            <Row icon={UserRound} iconBg="bg-tint-fill" label="View profile" chevron onClick={() => { setMenuOpen(false); setProfileOpen(true); }} />
           </Section>
           <Section className="mt-6">
             <Row
               icon={HeartOff}
-              iconBg="bg-label-2"
+              iconBg="bg-tile"
               label="Unmatch"
-              onClick={() =>
-                start(async () => {
-                  await unmatch(matchId);
-                  toast("Unmatched");
-                  router.replace("/app/matches");
-                })
-              }
+              destructive
+              onClick={() => { setMenuOpen(false); setConfirmUnmatch(true); }}
             />
-            <Row icon={Flag} iconBg="bg-danger" label="Report or block" destructive onClick={() => { setMenuOpen(false); setSafety(true); }} />
+            <Row icon={Flag} iconBg="bg-danger-fill" label="Report or block" destructive onClick={() => { setMenuOpen(false); setSafety(true); }} />
           </Section>
         </DrawerContent>
       </Drawer>
@@ -183,6 +204,32 @@ export function Chat({ matchId, meId, other, kind, initial }: { matchId: string;
         </DrawerContent>
       </Drawer>
       <SafetyDrawer open={safety} onOpenChange={setSafety} targetId={other.userId} name={other.username} onDone={() => router.replace("/app/matches")} />
+      <Dialog open={confirmUnmatch} onOpenChange={setConfirmUnmatch}>
+        <DialogContent showCloseButton={false} className="max-w-[300px] gap-0 overflow-hidden rounded-[14px] border-0 bg-surface/95 p-0 text-center backdrop-blur-xl">
+          <DialogHeader className="items-center gap-1 px-4 pt-5 pb-4 text-center">
+            <DialogTitle className="text-[17px] font-semibold">Unmatch {other.username}?</DialogTitle>
+            <DialogDescription className="text-[13px] leading-snug">
+              The chat closes for both of you and you won&apos;t see each other again. This can&apos;t be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 border-t-[0.5px] border-separator text-[17px]">
+            <button className="h-11 text-tint active:bg-fill" onClick={() => setConfirmUnmatch(false)}>Cancel</button>
+            <button
+              className="h-11 border-l-[0.5px] border-separator font-semibold text-danger active:bg-fill"
+              disabled={pending}
+              onClick={() =>
+                start(async () => {
+                  await unmatch(matchId);
+                  toast("Unmatched");
+                  router.replace("/app/matches");
+                })
+              }
+            >
+              Unmatch
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

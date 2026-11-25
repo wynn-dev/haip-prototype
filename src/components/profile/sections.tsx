@@ -1,7 +1,7 @@
 "use client";
 
 import { Home, Search } from "lucide-react";
-import { CheckList, Chips, FieldRow, Section, Segmented, Stepper, Switch, inputCls } from "@/components/ios";
+import { CheckList, Chips, FieldRow, LabeledInput, Section, Segmented, Stepper, Switch } from "@/components/ios";
 import { AvatarPicker, ListingPhotos } from "@/components/profile/photo-picker";
 import { Slider } from "@/components/ui/slider";
 import { ALLERGIES, CITIES, CLEANLINESS, DEALBREAKERS, FEATURES, GENDERS, GUESTS, LANGUAGES, PETS, SLEEP } from "@/lib/options";
@@ -33,7 +33,7 @@ export function AboutSection({ p, set }: SectionProps) {
     <div className="flex flex-col gap-6">
       <AvatarPicker name={p.username} value={p.photoUrl ?? null} onChange={(photoUrl) => set({ photoUrl })} />
       <Section footer="Shown on your profile. It doesn't have to be your real name.">
-        <input aria-label="Username" value={p.username} maxLength={20} onChange={(e) => set({ username: e.target.value })} placeholder="Username" className={inputCls} />
+        <LabeledInput label="Username" value={p.username} maxLength={20} onChange={(e) => set({ username: e.target.value })} placeholder="e.g. sanne.b" />
       </Section>
       <Section header="Gender">
         <FieldRow stacked>
@@ -70,7 +70,7 @@ export function LifestyleSection({ p, set }: SectionProps) {
             <span className="font-medium">{CLEANLINESS[c - 1]}</span>
             <span className="text-[15px] text-label-2 tabular-nums">{c}/5</span>
           </div>
-          <Slider min={1} max={5} step={1} value={[c]} onValueChange={(v) => set({ cleanliness: (v as number[])[0] })} />
+          <Slider aria-label="Tidiness" min={1} max={5} step={1} value={[c]} onValueChange={(v) => set({ cleanliness: (v as number[])[0] })} />
         </FieldRow>
       </Section>
       <Section header="Daily rhythm">
@@ -89,7 +89,7 @@ export function LifestyleSection({ p, set }: SectionProps) {
           <Chips options={PETS} value={p.pets ?? []} onChange={(pets) => set({ pets })} />
         </FieldRow>
       </Section>
-      <Section header="Allergies" footer="We won't show you homes with pets or smoke you're allergic to.">
+      <Section header="Allergies" footer="Cats, dogs and smoke: we hide people who have them or smoke at home. Other allergies are only for your own records. Allergies are never shown to other people.">
         <FieldRow stacked>
           <Chips options={ALLERGIES} value={p.allergies ?? []} onChange={(allergies) => set({ allergies })} />
         </FieldRow>
@@ -125,7 +125,7 @@ export function HousematesSection({ p, set }: SectionProps) {
             <span className="text-label-2">to</span>
             <span>{amax >= 60 ? "60+" : amax}</span>
           </div>
-          <Slider min={18} max={60} value={[amin, Math.min(amax, 60)]} onValueChange={(v) => { const [a, b] = v as number[]; set({ prefAgeMin: a, prefAgeMax: b >= 60 ? 99 : b }); }} />
+          <Slider aria-label="Age range" min={18} max={60} value={[amin, Math.min(amax, 60)]} onValueChange={(v) => { const [a, b] = v as number[]; set({ prefAgeMin: a, prefAgeMax: b >= 60 ? 99 : b }); }} />
         </FieldRow>
       </Section>
       <Section header="Dealbreakers" footer="People who match these are never shown to you, and you're not shown to them.">
@@ -144,7 +144,7 @@ export function TenantHousingSection({ p, set }: SectionProps) {
       <Section header="Budget" footer="Per month, including bills. We also show rooms up to 10% over.">
         <FieldRow stacked>
           <div className="text-[28px] font-semibold tracking-[-0.02em] tabular-nums">{euro(rent)}</div>
-          <Slider min={250} max={1800} step={25} value={[rent]} onValueChange={(v) => set({ maxRent: (v as number[])[0] })} />
+          <Slider aria-label="Maximum rent" min={250} max={1800} step={25} value={[rent]} onValueChange={(v) => set({ maxRent: (v as number[])[0] })} />
         </FieldRow>
       </Section>
       <Section header="Cities">
@@ -154,7 +154,7 @@ export function TenantHousingSection({ p, set }: SectionProps) {
       </Section>
       <Section header="Timing">
         <FieldRow label="Move in from">
-          <input type="date" value={p.moveInFrom ?? ""} onChange={(e) => set({ moveInFrom: e.target.value || null })} className="bg-transparent text-right text-tint outline-none" />
+          <input aria-label="Move in from" type="date" value={p.moveInFrom ?? ""} onChange={(e) => set({ moveInFrom: e.target.value || null })} className="bg-transparent text-right text-tint outline-none" />
         </FieldRow>
         <FieldRow label="Staying for">
           <Stepper value={n(p.stayMonths, 12)} min={1} max={60} onChange={(v) => set({ stayMonths: v })} format={months} />
@@ -176,9 +176,9 @@ export function ListingSection({ p, set }: SectionProps) {
         <p className="section-footer">The first photo is the cover. Up to 6.</p>
       </section>
       <Section header="The room">
-        <input aria-label="Title" value={l.title} maxLength={60} onChange={(e) => up({ title: e.target.value })} placeholder="Title, e.g. Bright room near the park" className={inputCls} />
-        <input aria-label="Neighbourhood" value={l.neighbourhood ?? ""} onChange={(e) => up({ neighbourhood: e.target.value })} placeholder="Neighbourhood" className={inputCls} />
-        <input aria-label="Street address" value={l.address} onChange={(e) => up({ address: e.target.value })} placeholder="Street and number" className={inputCls} />
+        <LabeledInput label="Title" value={l.title} maxLength={60} onChange={(e) => up({ title: e.target.value })} placeholder="Bright room near the park" />
+        <LabeledInput label="Area" value={l.neighbourhood ?? ""} maxLength={40} onChange={(e) => up({ neighbourhood: e.target.value })} placeholder="Neighbourhood" />
+        <LabeledInput label="Address" value={l.address} maxLength={120} onChange={(e) => up({ address: e.target.value })} placeholder="Street and number" />
       </Section>
       <p className="-mt-4 section-footer px-8">The street address is only shown to people you match with.</p>
       <Section header="City">
@@ -186,10 +186,10 @@ export function ListingSection({ p, set }: SectionProps) {
           <Chips single options={CITIES} value={l.city ? [l.city] : []} onChange={(v) => up({ city: v[0] ?? "" })} />
         </FieldRow>
       </Section>
-      <Section header="Rent" footer="Per month for the room, including bills.">
+      <Section header="Rent" footer="Per month for the room. Tick “Bills included” below if it covers energy and internet.">
         <FieldRow stacked>
           <div className="text-[28px] font-semibold tracking-[-0.02em] tabular-nums">{euro(rent)}</div>
-          <Slider min={250} max={1800} step={25} value={[rent]} onValueChange={(v) => up({ rent: (v as number[])[0] })} />
+          <Slider aria-label="Rent" min={250} max={1800} step={25} value={[rent]} onValueChange={(v) => up({ rent: (v as number[])[0] })} />
         </FieldRow>
       </Section>
       <Section header="Details">
@@ -197,7 +197,7 @@ export function ListingSection({ p, set }: SectionProps) {
           <Stepper value={n(l.durationMonths, 12)} min={1} max={60} onChange={(v) => up({ durationMonths: v })} format={months} />
         </FieldRow>
         <FieldRow label="Available from">
-          <input type="date" value={l.availableFrom ?? ""} onChange={(e) => up({ availableFrom: e.target.value || null })} className="bg-transparent text-right text-tint outline-none" />
+          <input aria-label="Available from" type="date" value={l.availableFrom ?? ""} onChange={(e) => up({ availableFrom: e.target.value || null })} className="bg-transparent text-right text-tint outline-none" />
         </FieldRow>
         <FieldRow label="People in the house">
           <Stepper value={n(l.householdSize, 3)} min={2} max={10} onChange={(v) => up({ householdSize: v })} />

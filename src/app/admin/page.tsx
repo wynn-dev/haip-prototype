@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { LargeTitle, NavBar } from "@/components/ios";
 import { PersonAvatar } from "@/components/person-avatar";
@@ -10,7 +10,7 @@ import { AppealActions, ContactDone, ReportActions } from "./actions";
 export const metadata = { title: "Moderation" };
 
 function Card({ children }: { children: React.ReactNode }) {
-  return <li className="group-list p-4">{children}</li>;
+  return <li className="rounded-xl bg-surface p-4">{children}</li>;
 }
 
 function Heading({ title, count }: { title: string; count: number }) {
@@ -32,7 +32,8 @@ export default async function AdminPage() {
       .leftJoin(schema.profiles, eq(schema.profiles.userId, schema.appeals.userId))
       .where(eq(schema.appeals.status, "pending"))
       .orderBy(schema.appeals.createdAt),
-    db.select().from(schema.contactRequests).where(eq(schema.contactRequests.status, "new")).orderBy(desc(schema.contactRequests.channel), schema.contactRequests.createdAt),
+    db.select().from(schema.contactRequests).where(eq(schema.contactRequests.status, "new"))// authorities first ("authority" < "user"), then oldest first
+      .orderBy(asc(schema.contactRequests.channel), schema.contactRequests.createdAt),
   ]);
 
   return (
@@ -58,11 +59,23 @@ export default async function AdminPage() {
               </div>
               {(q.trusted || q.pileOn > 1) && (
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  {q.trusted && <span className="tag bg-positive/15 text-positive">Trusted reporter · {q.reporterStats!.upheld}/{q.reporterStats!.resolved} upheld</span>}
-                  {q.pileOn > 1 && <span className="tag bg-caution/15 text-caution">{q.pileOn} open reports</span>}
+                  {q.trusted && <span className="tag bg-positive/15 text-positive">Trusted reporter · {q.reporterStats!.upheld} of {q.reporterStats!.resolved} people they reported were removed</span>}
+                  {q.pileOn > 1 && <span className="tag bg-caution/15 text-caution">Reported by {q.pileOn} people</span>}
                 </div>
               )}
               {q.r.details && <p className="mt-3 rounded-[10px] bg-fill px-3 py-2 text-[15px]">{q.r.details}</p>}
+              {q.messages.length > 0 && (
+                <details className="mt-3 rounded-[10px] bg-fill px-3 py-2 text-[15px]">
+                  <summary className="cursor-pointer font-medium">Their conversation ({q.messages.length} messages)</summary>
+                  <ul className="mt-2 flex flex-col gap-1.5">
+                    {q.messages.map((m, i) => (
+                      <li key={i} className={m.mine ? "text-label-2" : ""}>
+                        <b className="font-semibold">{m.mine ? (q.reporterName ?? "Reporter") : (q.reportedName ?? "Reported")}:</b> {m.body}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
               <ReportActions id={q.r.id} reason={labelOf(REPORT_REASONS, q.r.reason)} />
             </Card>
           ))}
@@ -92,7 +105,7 @@ export default async function AdminPage() {
             <Card key={c.id}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  {c.channel === "authority" && <span className="tag mb-2 bg-tint/15 text-tint">Authority · {c.organisation}</span>}
+                  {c.channel === "authority" && <span className="tag mb-2 max-w-full bg-tint/15 text-tint">Authority · {c.organisation}</span>}
                   <p className="font-semibold">{c.subject}</p>
                   <p className="text-[13px] text-label-2">{c.name} · {c.email}</p>
                 </div>

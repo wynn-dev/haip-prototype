@@ -58,7 +58,8 @@ function petsInHome(p: Person) {
   return p.pets.length > 0;
 }
 
-export type Exclusion = "age" | "gender" | "dealbreakers" | "allergies" | "budget" | "city" | "their-preferences";
+export type Exclusion =
+  | "age" | "gender" | "dealbreakers" | "allergies" | "budget" | "city" | "housemates" | "house-rules" | "their-preferences";
 
 /** Why would `a` refuse to live with `b`? (one direction; null = no veto) */
 function veto(a: Person, b: Person): Exclusion | null {
@@ -99,9 +100,18 @@ export function exclusionReason(me: Person, other: Person): Exclusion | "n/a" | 
     if (!renter.listing) return "n/a";
     if (tenant.areas.length > 0 && !tenant.areas.includes(renter.listing.city)) return "city";
     if (tenant.maxRent != null && renter.listing.rent > tenant.maxRent * RENT_TOLERANCE) return "budget";
-  } else if (me.areas.length && other.areas.length && !me.areas.some((a) => other.areas.includes(a))) {
-    // two tenants should be hunting in at least one shared city
-    return "city";
+    // the tenant would live with (household − 1) people: that must fit the range they asked for
+    const housemates = renter.listing.householdSize - 1;
+    if (housemates < tenant.roommatesMin || housemates > tenant.roommatesMax) return "housemates";
+    // a tenant bringing a pet needs a house that allows pets
+    if (tenant.pets.length > 0 && !renter.listing.features.includes("pets_allowed")) return "house-rules";
+  } else {
+    // two tenants should be looking in at least one shared city…
+    if (me.areas.length && other.areas.length && !me.areas.some((a) => other.areas.includes(a))) return "city";
+    // …with budgets in the same ballpark (within 50% of each other)…
+    if (me.maxRent && other.maxRent && Math.max(me.maxRent, other.maxRent) > 1.5 * Math.min(me.maxRent, other.maxRent)) return "budget";
+    // …and a household size you'd both accept
+    if (rangeOverlap(me.roommatesMin, me.roommatesMax, other.roommatesMin, other.roommatesMax) === 0) return "housemates";
   }
   const mine = veto(me, other);
   if (mine) return mine;
@@ -113,13 +123,14 @@ export function passesHardFilters(me: Person, other: Person): boolean {
   return exclusionReason(me, other) === null;
 }
 
-const rangeOverlap = (a1: number, a2: number, b1: number, b2: number) =>
-  Math.max(0, Math.min(a2, b2) - Math.max(a1, b1) + 1);
+function rangeOverlap(a1: number, a2: number, b1: number, b2: number) {
+  return Math.max(0, Math.min(a2, b2) - Math.max(a1, b1) + 1);
+}
 
 const monthsBetween = (a: string, b: string) =>
   Math.abs(new Date(a).getTime() - new Date(b).getTime()) / (1000 * 60 * 60 * 24 * 30);
 
-const euro = (n: number) => `€${Math.round(n)}`;
+export const euro = (n: number) => `€${Math.round(n).toLocaleString("en-GB")}`;
 
 export function scoreMatch(me: Person, other: Person): MatchResult {
   const reasons: string[] = [];
@@ -134,8 +145,8 @@ export function scoreMatch(me: Person, other: Person): MatchResult {
   // cleanliness: biggest predictor of housemate conflict
   const cleanDiff = Math.abs(me.cleanliness - other.cleanliness);
   add(25, 1 - cleanDiff / 4);
-  if (cleanDiff === 0) reasons.push("Same standards of tidy");
-  else if (cleanDiff >= 3) warnings.push("Very different on cleaning");
+  if (cleanDiff === 0) reasons.push("Same tidiness level");
+  else if (cleanDiff >= 3) warnings.push("Very different tidiness levels");
 
   // sleep schedule
   const sleepScore =
@@ -166,18 +177,18 @@ export function scoreMatch(me: Person, other: Person): MatchResult {
     const others = l.householdSize - 1; // housemates the tenant would have
     const fits = others >= tenant.roommatesMin && others <= tenant.roommatesMax;
     add(10, fits ? 1 : 0.3);
-    if (!fits) warnings.push(`Household of ${l.householdSize}`);
+    if (!fits) warnings.push(`${l.householdSize} people in the house`);
 
     if (tenant.maxRent != null) {
       const headroom = tenant.maxRent - l.rent;
       add(10, headroom >= 0 ? 1 : 1 + headroom / (tenant.maxRent * 0.1));
-      if (headroom >= 50) reasons.push(`${euro(headroom)} under budget`);
-      else if (headroom < 0) warnings.push(`${euro(-headroom)} over budget`);
+      if (headroom >= 50) reasons.push(me.role === "tenant" ? `${euro(headroom)} under your budget` : "Your rent fits their budget");
+      else if (headroom < 0) warnings.push(me.role === "tenant" ? `${euro(-headroom)} over your budget` : `Rent is ${euro(-headroom)} over their budget`);
     }
     if (tenant.stayMonths != null) {
       const diff = Math.abs(tenant.stayMonths - l.durationMonths);
       add(10, 1 - Math.min(diff, 12) / 12);
-      if (diff <= 1) reasons.push(`Contract fits your ${tenant.stayMonths}-month stay`);
+      if (diff <= 1) reasons.push(me.role === "tenant" ? `Contract fits your ${tenant.stayMonths}-month stay` : `Wants to stay ${tenant.stayMonths} months, like your contract`);
     }
     if (tenant.moveInFrom && l.availableFrom) {
       const m = monthsBetween(tenant.moveInFrom, l.availableFrom);
@@ -192,7 +203,7 @@ export function scoreMatch(me: Person, other: Person): MatchResult {
       if (diff <= 75) reasons.push("Similar budgets");
     }
     const areas = me.areas.filter((a) => other.areas.includes(a));
-    if (areas.length) reasons.push(`Both hunting in ${areas[0]}`);
+    if (areas.length) reasons.push(`Both looking in ${areas[0]}`);
     if (me.stayMonths != null && other.stayMonths != null) {
       const diff = Math.abs(me.stayMonths - other.stayMonths);
       add(10, 1 - Math.min(diff, 12) / 12);

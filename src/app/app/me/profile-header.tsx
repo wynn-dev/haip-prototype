@@ -22,7 +22,7 @@ export function ProfileHeader({ card }: { card: CardData }) {
             </span>
             <ChevronRight className="size-[18px] text-label-3" strokeWidth={2.5} />
           </button>
-          <Link href="/app/me/edit" className="flex min-h-11 items-center px-4 text-tint active:bg-fill">Edit profile & preferences</Link>
+          <Link href="/app/me/edit" className="flex min-h-11 items-center px-4 text-tint active:bg-fill">Edit profile & filters</Link>
         </div>
       </section>
       <Drawer open={open} onOpenChange={setOpen}>

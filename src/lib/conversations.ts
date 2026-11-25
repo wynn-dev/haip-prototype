@@ -6,7 +6,7 @@ import { matchesFor, rowsFor, toCard, loadRow, toPerson } from "@/lib/deck";
 export async function getConversations(userId: string) {
   const ms = await matchesFor(userId);
   if (!ms.length) return [];
-  const otherIds = ms.map((m) => (m.userA === userId ? m.userB : m.userA));
+  const otherIds = ms.map((m) => (m.userA === userId ? m.userB : m.userA)).filter((x): x is string => !!x);
   const [rows, meRow, last] = await Promise.all([
     rowsFor(otherIds),
     loadRow(userId),
@@ -22,7 +22,7 @@ export async function getConversations(userId: string) {
   return ms
     .map((m) => {
       const otherId = m.userA === userId ? m.userB : m.userA;
-      const row = byId.get(otherId);
+      const row = otherId ? byId.get(otherId) : undefined;
       if (!row || row.user.status !== "active") return null;
       const lastMsg = lastBy.get(m.id) ?? null;
       return {
